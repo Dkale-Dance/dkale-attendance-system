@@ -20,8 +20,7 @@ function App() {
         alert("User logged in successfully!");
       }
       setUser(authenticatedUser);
-    } catch (error) {
-      alert(authService)
+    } catch (error) {    
       alert(error.message);
     }
   };
