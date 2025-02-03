@@ -1,27 +1,27 @@
 import React, { useState } from "react";
 import { authService } from "./services/AuthService";
+import ErrorMessage from "./components/ErrorMessage"; // Import ErrorMessage component
 
 function App() {
- 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegister, setIsRegister] = useState(false);
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(""); // Store error messages
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Clear previous error messages
     try {
       let authenticatedUser;
       if (isRegister) {
         authenticatedUser = await authService.register(email, password);
-        alert("User registered successfully!");
       } else {
         authenticatedUser = await authService.login(email, password);
-        alert("User logged in successfully!");
       }
       setUser(authenticatedUser);
-    } catch (error) {    
-      alert(error.message);
+    } catch (error) {
+      setError(error.message); // Set error once, below the form
     }
   };
 
@@ -29,9 +29,8 @@ function App() {
     try {
       await authService.logout();
       setUser(null);
-      alert("Logged out successfully!");
     } catch (error) {
-      alert(error.message);
+      setError(error.message);
     }
   };
 
@@ -46,6 +45,7 @@ function App() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+        
         <input
           type="password"
           placeholder="Password"
@@ -53,11 +53,17 @@ function App() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+
         <button type="submit">{isRegister ? "Register" : "Login"}</button>
+        
+        {/* ✅ Show error only once, below the form */}
+        <ErrorMessage message={error} />
       </form>
+      
       <button onClick={() => setIsRegister(!isRegister)}>
         {isRegister ? "Switch to Login" : "Switch to Register"}
       </button>
+
       {user && (
         <>
           <p>Welcome, {user.email}</p>
