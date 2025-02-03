@@ -7,15 +7,15 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "firebase": "^11.2.0",
-    "react": "^18.2.0",                   // Downgraded to stable version
-    "react-dom": "^18.2.0",               // Downgraded to stable version
+    "react": "^18.2.0",                   
+    "react-dom": "^18.2.0",               
     "react-router-dom": "^7.1.5",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",       // Ensures the build command is set
+    "build": "react-scripts build",       
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -38,6 +38,6 @@
     ]
   },
   "devDependencies": {
-    "ajv": "^8.12.0"                      // Updated AJV to a compatible version
+    "ajv": "^8.12.0"                    
   }
 }
