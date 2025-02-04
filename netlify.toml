@@ -1,8 +1,10 @@
 # Netlify Configuration File
 
 [build]
-  publish = "build"  
+  base = "frontend"  
+  publish = "frontend/build"  
   command = "npm install && npm run build"  
+
 [context.production.environment]
   REACT_APP_API_KEY = "your-api-key-here"
   REACT_APP_AUTH_DOMAIN = "your-auth-domain"
@@ -14,4 +16,4 @@
 
 # Run tests before deploying (optional)
 [build.lifecycle]
-  onBuild = "npm test"  # Ensures tests pass before deploying
+  onBuild = "npm test"  
