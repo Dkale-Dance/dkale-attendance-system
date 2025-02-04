@@ -2,13 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCdF9MnQtwe3OKhqx1L0kd5eWmw7DVVX5w",
-  authDomain: "dkale-attendance.firebaseapp.com",
-  projectId: "dkale-attendance",
-  storageBucket: "dkale-attendance.firebasestorage.app",
-  messagingSenderId: "872644984535",
-  appId: "1:872644984535:web:b37a5e7ac3edaa9da4ba92",
-  measurementId: "G-6GHDXBLH4S",
+  apiKey: process.env.REACT_APP_API_KEY,
+  authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_APP_ID,
+  measurementId: process.env.REACT_APP_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
