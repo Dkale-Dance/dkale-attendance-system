@@ -1,10 +1,8 @@
 # Netlify Configuration File
 
 [build]
-  base = "frontend"  # Path to frontend folder
-  publish = "frontend/build"  # Folder to deploy after build
-  command = "npm install && npm run build"  # Install dependencies & build project
-
+  publish = "build"  
+  command = "npm install && npm run build"  
 [context.production.environment]
   REACT_APP_API_KEY = "your-api-key-here"
   REACT_APP_AUTH_DOMAIN = "your-auth-domain"
