@@ -7,8 +7,7 @@ export class AuthRepository {
     return userCredential.user;
   }
 
-  async login(email, password) {
-    console.log(auth)
+  async login(email, password) {  
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   }
