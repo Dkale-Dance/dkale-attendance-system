@@ -8,6 +8,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
 
+  
   const handleAuth = async (email, password) => {
     setError(""); // Clear previous error messages
     try {
