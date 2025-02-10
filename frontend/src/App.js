@@ -1,16 +1,14 @@
 import React, { useState } from "react";
 import { authService } from "./services/AuthService";
-import ErrorMessage from "./components/ErrorMessage"; // Import ErrorMessage component
+import LoginForm from "./components/LoginForm";
+import ErrorMessage from "./components/ErrorMessage";
 
 function App() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isRegister, setIsRegister] = useState(false);
   const [user, setUser] = useState(null);
-  const [error, setError] = useState(""); // Store error messages
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleAuth = async (email, password) => {
     setError(""); // Clear previous error messages
     try {
       let authenticatedUser;
@@ -21,7 +19,8 @@ function App() {
       }
       setUser(authenticatedUser);
     } catch (error) {
-      setError(error.message); // Set error once, below the form
+      setError(error.message);
+      throw error; // Propagate error to LoginForm
     }
   };
 
@@ -35,40 +34,24 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <h1>{isRegister ? "Register" : "Login"}</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+    <div className="App" data-testid="app">
+      {!user ? (
+        <LoginForm
+          onSubmit={handleAuth}
+          isRegister={isRegister}
+          onSwitchMode={() => setIsRegister(!isRegister)}
         />
-        
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        <button type="submit">{isRegister ? "Register" : "Login"}</button>
-        
-        {/* ✅ Show error only once, below the form */}
-        <ErrorMessage message={error} />
-      </form>
-      
-      <button onClick={() => setIsRegister(!isRegister)}>
-        {isRegister ? "Switch to Login" : "Switch to Register"}
-      </button>
-
-      {user && (
-        <>
-          <p>Welcome, {user.email}</p>
-          <button onClick={handleLogout}>Logout</button>
-        </>
+      ) : (
+        <div className="user-welcome" data-testid="welcome-section">
+          <p data-testid="welcome-message">Welcome, {user.email}</p>
+          <button 
+            onClick={handleLogout}
+            data-testid="logout-button"
+          >
+            Logout
+          </button>
+          {error && <ErrorMessage message={error} />}
+        </div>
       )}
     </div>
   );
