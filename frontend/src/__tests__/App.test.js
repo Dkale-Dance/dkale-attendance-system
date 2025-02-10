@@ -14,6 +14,7 @@ jest.mock('../services/AuthService', () => ({
   },
 }));
 
+
 describe('App', () => {
   beforeEach(() => {
     jest.clearAllMocks();
