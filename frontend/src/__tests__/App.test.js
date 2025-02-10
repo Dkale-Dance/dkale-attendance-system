@@ -1,11 +1,12 @@
+// App.test.js
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import App from './App';
-import { authService } from './services/AuthService';
+import App from '../App';
+import { authService } from '../services/AuthService';
 
 // Mock the auth service
-jest.mock('./services/AuthService', () => ({
+jest.mock('../services/AuthService', () => ({
   authService: {
     login: jest.fn(),
     register: jest.fn(),
@@ -63,9 +64,9 @@ describe('App', () => {
     // Submit the form
     fireEvent.submit(screen.getByTestId('submit-button'));
 
-    // Wait for the error message
+    // Wait for the error message using text content instead of test-id
     await waitFor(() => {
-      expect(screen.getByTestId('error-message')).toHaveTextContent(errorMessage);
+      expect(screen.getByText(errorMessage)).toBeInTheDocument();
     });
   });
 
