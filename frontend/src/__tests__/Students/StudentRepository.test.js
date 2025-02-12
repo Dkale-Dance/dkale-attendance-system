@@ -1,4 +1,4 @@
-import { StudentRepository } from '../repository/StudentRepository';
+import { StudentRepository } from '../../repository/StudentRepository';
 
 // Create a mock db object instead of importing Firebase config
 const mockDb = {

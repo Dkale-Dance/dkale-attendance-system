@@ -1,4 +1,4 @@
-import { StudentListPresenter } from '../presenters/StudentListPresenter';
+import { StudentListPresenter } from '../../presenters/StudentListPresenter';
 
 describe('StudentListPresenter', () => {
   let presenter;

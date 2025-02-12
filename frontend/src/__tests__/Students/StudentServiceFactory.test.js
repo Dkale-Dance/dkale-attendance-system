@@ -1,5 +1,6 @@
-import { createStudentService } from '../services/StudentServiceFactory';
-import { StudentService } from '../services/StudentService';
+import { createStudentService } from '../../services/StudentServiceFactory';
+import { StudentService } from '../../services/StudentService';
+
 
 // Mock Firebase functions at the top level
 jest.mock('firebase/firestore', () => ({
@@ -11,19 +12,19 @@ jest.mock('firebase/firestore', () => ({
 }));
 
 // Mock the repositories
-jest.mock('../repository/StudentRepository', () => ({
+jest.mock('../../repository/StudentRepository', () => ({
   StudentRepository: jest.fn().mockImplementation(() => ({
     // add any repository methods you need to mock
   }))
 }));
 
-jest.mock('../repository/UserRepository', () => ({
+jest.mock('../../repository/UserRepository', () => ({
   UserRepository: jest.fn().mockImplementation(() => ({
     // add any repository methods you need to mock
   }))
 }));
 
-jest.mock('../services/StudentService', () => ({
+jest.mock('../../services/StudentService', () => ({
   StudentService: jest.fn().mockImplementation(() => ({
     // add any service methods you need to mock
   }))
