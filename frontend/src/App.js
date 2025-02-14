@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { authService } from "./services/AuthService";
+import React, { useState, useEffect } from "react";
+import { createAuthService } from "./services/AuthServiceFactory";
 import LoginForm from "./components/LoginForm";
 import ErrorMessage from "./components/ErrorMessage";
 import StudentList from "./components/admin/StudentList";
@@ -12,14 +12,13 @@ function App() {
   const [error, setError] = useState("");
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Create presenter for StudentList
-  const studentService = createStudentService();
-  const presenter = new StudentListPresenter(studentService, {
+  const [authService] = useState(() => createAuthService());
+  const [studentService] = useState(() => createStudentService());
+  const [presenter] = useState(() => new StudentListPresenter(studentService, {
     setStudents,
     setLoading: setIsLoading,
     setError
-  });
+  }));
 
   const handleAuth = async (email, password) => {
     setError(""); // Clear previous error messages

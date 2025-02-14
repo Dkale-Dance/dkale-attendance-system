@@ -1,20 +1,53 @@
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
-
-export class UserRepository {
-  constructor() {
-    this.db = getFirestore();
+class UserRepository {
+  constructor(db) {
+    this.db = db;
+    this.collectionName = 'users';
   }
 
-  async assignRole(userId, role) {
-    const userRef = doc(this.db, "users", userId); // Ensure "users" collection is specified
-    await setDoc(userRef, { role }, { merge: true });
+  async findStudents() {
+    const querySnapshot = await this.db.collection(this.collectionName)
+      .where('role', '==', 'student')
+      .get();
+
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
   }
 
-  async getRole(userId) {
-    const userRef = doc(this.db, "users", userId);
-    const docSnap = await getDoc(userRef);
-    return docSnap.exists() ? docSnap.data().role : "anonymous";
+  async findById(id) {
+    const docRef = this.db.collection(this.collectionName).doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return null;
+    }
+
+    return {
+      id: doc.id,
+      ...doc.data()
+    };
+  }
+
+  async update(id, updateData) {
+    const docRef = this.db.collection(this.collectionName).doc(id);
+    const updates = {
+      ...updateData,
+      updatedAt: new Date()
+    };
+
+    await docRef.update(updates);
+    return this.findById(id);
+  }
+
+  async updateRole(id, role) {
+    return this.update(id, { role });
+  }
+
+  async getRole(id) {
+    const user = await this.findById(id);
+    return user ? user.role : 'anonymous';
   }
 }
 
-export const userRepository = new UserRepository();
+export { UserRepository };

@@ -1,126 +1,103 @@
-import AuthService from "../services/AuthService";
-import { AuthRepository } from "../repository/AuthRepository";
-import { UserRepository } from "../repository/UserRepository";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, setDoc, getDoc, getFirestore } from "firebase/firestore";
+import { AuthService } from '../services/AuthService';
 
-// Mock Firebase Auth
-jest.mock("firebase/auth", () => {
-  const actualAuth = jest.requireActual("firebase/auth");
-  return {
-    ...actualAuth,
-    signInWithEmailAndPassword: jest.fn(),
-    createUserWithEmailAndPassword: jest.fn(),
-    signOut: jest.fn(),
-  };
-});
-
-// Mock Firestore
-jest.mock("firebase/firestore", () => ({
-  getFirestore: jest.fn(),
-  doc: jest.fn(),
-  setDoc: jest.fn(),
-  getDoc: jest.fn(),
-}));
-
-describe("AuthService (Unit Test)", () => {
-  let authService;
-  let authRepository;
-  let userRepository;
-  const mockFirestore = { id: "mockFirestore" };
-  const mockDocRef = { id: "mockDocRef" };
+describe('AuthService', () => {
+  let service;
+  let mockAuthRepository;
+  let mockUserRepository;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Setup Firestore mocks
-    getFirestore.mockReturnValue(mockFirestore);
-    doc.mockReturnValue(mockDocRef);
-    setDoc.mockResolvedValue();
-    getDoc.mockResolvedValue({
-      exists: () => true,
-      data: () => ({ role: "student" })
-    });
+    // Create fresh mocks
+    mockAuthRepository = {
+      register: jest.fn(),
+      login: jest.fn(),
+      logout: jest.fn()
+    };
 
-    authRepository = new AuthRepository();
-    userRepository = new UserRepository();
-    authService = new AuthService(authRepository, userRepository);
+    mockUserRepository = {
+      updateRole: jest.fn(),
+      getRole: jest.fn()
+    };
+
+    // Create new service instance
+    service = new AuthService(mockAuthRepository, mockUserRepository);
   });
 
-  it("should register a new user and assign student role", async () => {
-    // Mock user creation
-    const mockUser = { 
-      uid: "12345", 
-      email: "test@example.com"
-    };
-    createUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-    // Perform registration
-    const result = await authService.register("test@example.com", "password123");
+  it('should login a user and return user with role', async () => {
+    // Arrange
+    const testEmail = 'test@example.com';
+    const testPassword = 'password123';
+    const mockUser = { uid: 'user123', email: testEmail };
+    const mockRole = 'student';
 
-    // Verify Auth creation
-    expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
-      expect.anything(),
-      "test@example.com",
-      "password123"
-    );
+    mockAuthRepository.login.mockResolvedValue(mockUser);
+    mockUserRepository.getRole.mockResolvedValue(mockRole);
 
-    // Verify role assignment
-    expect(doc).toHaveBeenCalledWith(
-      mockFirestore,
-      "users",
-      mockUser.uid
-    );
-    expect(setDoc).toHaveBeenCalledWith(
-      mockDocRef,
-      { role: "student" },
-      { merge: true }
-    );
+    // Act
+    const result = await service.login(testEmail, testPassword);
 
-    // Verify returned user object
+    // Assert
+    expect(mockAuthRepository.login).toHaveBeenCalledWith(testEmail, testPassword);
+    expect(mockUserRepository.getRole).toHaveBeenCalledWith(mockUser.uid);
     expect(result).toEqual({
       ...mockUser,
-      role: "student"
+      role: mockRole
     });
   });
 
-  it("should not allow duplicate registration", async () => {
-    createUserWithEmailAndPassword.mockRejectedValue(new Error("User already exists"));
-    await expect(authService.register("test@example.com", "password123"))
-      .rejects.toThrow("User already exists");
+  it('should register a new user and assign student role', async () => {
+    // Arrange
+    const testEmail = 'newuser@example.com';
+    const testPassword = 'password123';
+    const mockUser = { uid: 'user123', email: testEmail };
+
+    mockAuthRepository.register.mockResolvedValue(mockUser);
+    mockUserRepository.updateRole.mockResolvedValue(undefined);
+    mockUserRepository.getRole.mockResolvedValue('student');
+
+    // Act
+    const result = await service.register(testEmail, testPassword);
+
+    // Assert
+    expect(mockAuthRepository.register).toHaveBeenCalledWith(testEmail, testPassword);
+    expect(mockUserRepository.updateRole).toHaveBeenCalledWith(mockUser.uid, 'student');
+    expect(mockUserRepository.getRole).toHaveBeenCalledWith(mockUser.uid);
+    expect(result).toEqual({
+      ...mockUser,
+      role: 'student'
+    });
   });
 
-  it("should log in a registered user", async () => {
-    const mockUser = { uid: "12345", email: "test@example.com" };
-    signInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
-    const user = await authService.login("test@example.com", "password123");
-    expect(signInWithEmailAndPassword).toHaveBeenCalledWith(
-      expect.anything(),
-      "test@example.com",
-      "password123"
-    );
-    expect(user.email).toBe("test@example.com");
+  it('should handle login errors', async () => {
+    // Arrange
+    const errorMessage = 'Invalid credentials';
+    mockAuthRepository.login.mockRejectedValue(new Error(errorMessage));
+
+    // Act & Assert
+    await expect(service.login('test@example.com', 'wrong-password'))
+      .rejects
+      .toThrow(errorMessage);
   });
 
-  it("should not log in an unregistered user", async () => {
-    signInWithEmailAndPassword.mockRejectedValue(new Error("Invalid credentials"));
-    await expect(authService.login("unknown@example.com", "password123"))
-      .rejects.toThrow("Invalid credentials");
+  it('should handle registration errors', async () => {
+    // Arrange
+    const errorMessage = 'Email already in use';
+    mockAuthRepository.register.mockRejectedValue(new Error(errorMessage));
+
+    // Act & Assert
+    await expect(service.register('existing@example.com', 'password123'))
+      .rejects
+      .toThrow(errorMessage);
   });
 
-  it("should log out a user", async () => {
-    signOut.mockResolvedValue();
-    await authService.logout();
-    expect(signOut).toHaveBeenCalled();
-  });
+  it('should call logout on auth repository', async () => {
+    // Act
+    await service.logout();
 
-  it("should handle logout errors", async () => {
-    signOut.mockRejectedValue(new Error("No user logged in"));
-    await expect(authService.logout()).rejects.toThrow("No user logged in");
-  });
-
-  afterAll(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    // Assert
+    expect(mockAuthRepository.logout).toHaveBeenCalled();
   });
 });

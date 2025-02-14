@@ -1,7 +1,4 @@
-import { authRepository } from "../repository/AuthRepository";
-import { userRepository } from "../repository/UserRepository";
-
-export default class AuthService {
+class AuthService {
   constructor(authRepository, userRepository) {
     this.authRepository = authRepository;
     this.userRepository = userRepository;
@@ -12,7 +9,7 @@ export default class AuthService {
     const user = await this.authRepository.register(email, password);
     
     // Then assign the default role
-    await this.userRepository.assignRole(user.uid, "student");
+    await this.userRepository.updateRole(user.uid, "student");
     
     // Get the role to include in the response
     const role = await this.userRepository.getRole(user.uid);
@@ -25,7 +22,17 @@ export default class AuthService {
   }
 
   async login(email, password) {
-    return this.authRepository.login(email, password);
+    // Login with Firebase Auth
+    const user = await this.authRepository.login(email, password);
+    
+    // Get the user's role
+    const role = await this.userRepository.getRole(user.uid);
+    
+    // Return user with role
+    return {
+      ...user,
+      role
+    };
   }
 
   async logout() {
@@ -33,5 +40,4 @@ export default class AuthService {
   }
 }
 
-// ✅ Default export with the real repositories
-export const authService = new AuthService(authRepository, userRepository);
+export { AuthService };
