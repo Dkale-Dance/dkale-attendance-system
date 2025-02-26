@@ -9,9 +9,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
   color: white;
   margin-bottom: 30px;
+  padding: 10px;
+}
+
+.logo-container {
+  padding: 10px 0;
+}
+
+.app-logo {
+  height: auto;
+  max-width: 300px;
+  max-height: 80px;
+  object-fit: contain;
 }
 
 .App-link {
@@ -123,4 +134,29 @@ main {
   padding: 30px;
   font-size: 18px;
   color: #6c757d;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .app-logo {
+    max-width: 250px;
+  }
+  
+  .user-welcome {
+    padding: 15px;
+  }
+  
+  .student-profile {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-logo {
+    max-width: 200px;
+  }
+  
+  main {
+    padding: 0 10px;
+  }
 }

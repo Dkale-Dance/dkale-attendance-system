@@ -5,6 +5,7 @@ import LoginForm from "./components/LoginForm";
 import StudentManagement from "./components/StudentManagement";
 import StudentForm from "./components/StudentForm";
 import ErrorMessage from "./components/ErrorMessage";
+import logo from "./assets/logo.png"; // Import your logo
 import "./App.css";
 
 function App() {
@@ -164,7 +165,9 @@ function App() {
   return (
     <div className="App" data-testid="app">
       <header className="App-header">
-        <h1>Education Management System</h1>
+        <div className="logo-container">
+          <img src={logo} alt="Company Logo" className="app-logo" />
+        </div>
       </header>
       
       <main>
