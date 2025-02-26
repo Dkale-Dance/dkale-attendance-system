@@ -1,5 +1,5 @@
 // StudentRepository.js
-import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 export class StudentRepository {
   constructor() {
