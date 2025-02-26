@@ -1,0 +1,72 @@
+.student-list {
+    max-width: 100%;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+  }
+  
+  .filter-controls {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .filter-controls label {
+    margin-right: 10px;
+    font-weight: bold;
+  }
+  
+  .filter-controls select {
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  .student-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  
+  .student-list th, 
+  .student-list td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .student-list th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+  }
+  
+  .student-list tr:hover {
+    background-color: #f1f3f5;
+  }
+  
+  .student-list button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .student-list button:hover:not(:disabled) {
+    background-color: #c82333;
+  }
+  
+  .student-list button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+  
+  .student-list select {
+    padding: 6px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+  }
