@@ -1,5 +1,5 @@
 // StudentList.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { studentService } from '../services/StudentService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentList.module.css';
@@ -10,17 +10,7 @@ const StudentList = ({ onSelectStudent }) => {
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
 
-  useEffect(() => {
-    fetchStudents();
-    
-    // Event listener for refreshing students
-    const refreshHandler = () => fetchStudents();
-    window.addEventListener('refreshStudents', refreshHandler);
-    
-    return () => window.removeEventListener('refreshStudents', refreshHandler);
-  }, [filterStatus]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError('');
     
@@ -40,7 +30,17 @@ const StudentList = ({ onSelectStudent }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
+
+  useEffect(() => {
+    fetchStudents();
+    
+    // Event listener for refreshing students
+    const refreshHandler = () => fetchStudents();
+    window.addEventListener('refreshStudents', refreshHandler);
+    
+    return () => window.removeEventListener('refreshStudents', refreshHandler);
+  }, [fetchStudents]);
 
   const handleRemoveStudent = async (studentId) => {
     try {
