@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { studentService } from '../services/StudentService';
 import ErrorMessage from './ErrorMessage';
+import styles from './StudentList.module.css';
 
-const StudentList = () => {
+const StudentList = ({ onSelectStudent }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,9 +33,10 @@ const StudentList = () => {
         studentData = await studentService.getStudentsByStatus(filterStatus);
       }
       
-      setStudents(studentData);
+      setStudents(studentData || []);
     } catch (err) {
       setError(err.message);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -67,10 +69,10 @@ const StudentList = () => {
   }
 
   return (
-    <div className="student-list" data-testid="student-list">
+    <div className={styles['student-list']} data-testid="student-list">
       <h2>Students</h2>
       
-      <div className="filter-controls">
+      <div className={styles['filter-controls']}>
         <label htmlFor="status-filter">Filter by Status:</label>
         <select 
           id="status-filter" 
@@ -88,7 +90,7 @@ const StudentList = () => {
       
       {error && <ErrorMessage message={error} />}
       
-      {students.length === 0 ? (
+      {Array.isArray(students) && students.length === 0 ? (
         <p data-testid="no-students-message">No students found.</p>
       ) : (
         <table data-testid="students-table">
@@ -102,7 +104,7 @@ const StudentList = () => {
             </tr>
           </thead>
           <tbody>
-            {students.map(student => (
+            {Array.isArray(students) && students.map(student => (
               <tr key={student.id} data-testid={`student-row-${student.id}`}>
                 <td>{`${student.firstName || ''} ${student.lastName || ''}`}</td>
                 <td>{student.email}</td>
@@ -128,6 +130,14 @@ const StudentList = () => {
                   >
                     Remove
                   </button>
+                  {onSelectStudent && (
+                    <button
+                      onClick={() => onSelectStudent(student)}
+                      data-testid={`edit-button-${student.id}`}
+                    >
+                      Edit
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
