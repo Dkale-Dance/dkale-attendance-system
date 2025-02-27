@@ -1,5 +1,8 @@
 .App {
   text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .App-header {
@@ -32,7 +35,9 @@
 main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 20px;
+  flex: 1;
+  width: 100%;
 }
 
 .user-welcome {
@@ -44,21 +49,12 @@ main {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.user-role {
-  display: inline-block;
-  background-color: #17a2b8;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 14px;
-  margin-bottom: 20px;
-}
-
 .student-profile {
   text-align: left;
   border: 1px solid #dee2e6;
   border-radius: 8px;
   padding: 20px;
+  margin-top: 20px;
   margin-bottom: 20px;
   background-color: white;
 }
@@ -76,38 +72,13 @@ main {
   font-size: 16px;
 }
 
-.student-profile button {
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.student-profile button:hover {
-  background-color: #5a6268;
-}
-
-.logout-button {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-top: 20px;
-}
-
-.logout-button:hover {
-  background-color: #c82333;
-}
-
 .profile-editor {
   max-width: 500px;
   margin: 0 auto;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .profile-editor h2 {
@@ -123,6 +94,7 @@ main {
   border-radius: 4px;
   cursor: pointer;
   margin-top: 10px;
+  margin-right: 10px;
 }
 
 .profile-editor button:hover {
@@ -149,6 +121,10 @@ main {
   .student-profile {
     padding: 15px;
   }
+  
+  main {
+    padding: 15px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -157,6 +133,14 @@ main {
   }
   
   main {
-    padding: 0 10px;
+    padding: 10px;
+  }
+  
+  .user-welcome {
+    padding: 10px;
+  }
+  
+  .student-profile {
+    padding: 10px;
   }
 }
