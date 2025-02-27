@@ -20,8 +20,8 @@ const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
         const { email, firstName, lastName } = formData;
         const password = "tempPassword123"; // In a real app, generate a random password or implement invitation flow
         
-        // Register the user with Firebase Auth
-        const user = await authService.register(email, password);
+        // Register the student using the admin-safe method that won't affect current session
+        const user = await authService.registerStudent(email, password);
         
         // Update the user profile with student details
         await studentService.initializeStudentProfile(user.uid, {

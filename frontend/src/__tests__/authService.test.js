@@ -1,7 +1,7 @@
 import AuthService from "../services/AuthService";
 import { AuthRepository } from "../repository/AuthRepository";
 import { UserRepository } from "../repository/UserRepository";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, getAuth } from "firebase/auth";
 import { doc, setDoc, getDoc, getFirestore } from "firebase/firestore";
 
 // Mock Firebase Auth
@@ -11,6 +11,7 @@ jest.mock("firebase/auth", () => {
     ...actualAuth,
     signInWithEmailAndPassword: jest.fn(),
     createUserWithEmailAndPassword: jest.fn(),
+    getAuth: jest.fn(),
     signOut: jest.fn(),
   };
 });
@@ -43,6 +44,10 @@ describe("AuthService (Unit Test)", () => {
     });
 
     authRepository = new AuthRepository();
+    
+    // Mock registerWithoutSignIn method
+    authRepository.registerWithoutSignIn = jest.fn();
+    
     userRepository = new UserRepository();
     authService = new AuthService(authRepository, userRepository);
   });
@@ -62,6 +67,44 @@ describe("AuthService (Unit Test)", () => {
     expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
       expect.anything(),
       "test@example.com",
+      "password123"
+    );
+
+    // Verify role assignment
+    expect(doc).toHaveBeenCalledWith(
+      mockFirestore,
+      "users",
+      mockUser.uid
+    );
+    expect(setDoc).toHaveBeenCalledWith(
+      mockDocRef,
+      { role: "student" },
+      { merge: true }
+    );
+
+    // Verify returned user object
+    expect(result).toEqual({
+      ...mockUser,
+      role: "student"
+    });
+  });
+
+  it("should register a student without affecting admin session", async () => {
+    // Mock user creation
+    const mockUser = { 
+      uid: "student123", 
+      email: "student@example.com"
+    };
+    
+    // Mock the registerWithoutSignIn method
+    authRepository.registerWithoutSignIn.mockResolvedValue(mockUser);
+
+    // Perform student registration
+    const result = await authService.registerStudent("student@example.com", "password123");
+
+    // Verify the admin-friendly registration method was called
+    expect(authRepository.registerWithoutSignIn).toHaveBeenCalledWith(
+      "student@example.com",
       "password123"
     );
 

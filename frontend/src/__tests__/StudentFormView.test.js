@@ -16,7 +16,8 @@ jest.mock('../services/StudentService', () => ({
 
 jest.mock('../services/AuthService', () => ({
   authService: {
-    register: jest.fn()
+    register: jest.fn(),
+    registerStudent: jest.fn() // add mock for new method
   }
 }));
 
@@ -94,11 +95,11 @@ describe('StudentFormView', () => {
     expect(mockOnCancel).toHaveBeenCalled();
   });
 
-  test('submits form to create new student', async () => {
+  test('uses registerStudent instead of register when adding a new student as admin', async () => {
     const mockOnSuccess = jest.fn();
     const mockUser = { uid: 'user123', email: 'test@example.com' };
     
-    authService.register.mockResolvedValueOnce(mockUser);
+    authService.registerStudent.mockResolvedValueOnce(mockUser);
     studentService.initializeStudentProfile.mockResolvedValueOnce({});
     
     render(
@@ -113,10 +114,12 @@ describe('StudentFormView', () => {
     });
 
     await waitFor(() => {
-      expect(authService.register).toHaveBeenCalledWith(
+      // Should use registerStudent instead of register
+      expect(authService.registerStudent).toHaveBeenCalledWith(
         'test@example.com', 
         'tempPassword123'
       );
+      expect(authService.register).not.toHaveBeenCalled();
       expect(studentService.initializeStudentProfile).toHaveBeenCalledWith(
         'user123',
         expect.objectContaining({
@@ -165,7 +168,7 @@ describe('StudentFormView', () => {
 
   test('handles form submission errors', async () => {
     const errorMessage = 'Registration failed';
-    authService.register.mockRejectedValueOnce(new Error(errorMessage));
+    authService.registerStudent.mockRejectedValueOnce(new Error(errorMessage));
     
     render(
       <StudentFormView 
