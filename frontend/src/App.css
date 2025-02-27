@@ -3,6 +3,10 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .App-header {
@@ -43,6 +47,7 @@ main {
   padding: 20px;
   flex: 1;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .user-welcome {
