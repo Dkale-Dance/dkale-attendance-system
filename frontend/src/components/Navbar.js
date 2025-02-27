@@ -27,6 +27,15 @@ const UserInfo = ({ user, userRole }) => (
 const NavigationLinks = ({ userRole, setView, isExpanded }) => {
   const links = [];
 
+  // Home link for all authenticated users
+  links.push(
+    <NavLink 
+      key="home" 
+      label="Home" 
+      onClick={() => setView('default')} 
+    />
+  );
+
   // Adding links based on user role - Open/Closed for extension
   if (userRole === 'student') {
     links.push(

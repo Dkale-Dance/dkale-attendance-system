@@ -25,6 +25,7 @@ describe('Navbar Component', () => {
   test('should show appropriate navigation links based on user role (student)', () => {
     render(<Navbar user={mockUser} userRole="student" onLogout={mockLogout} setView={mockSetView} />);
     
+    expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
     expect(screen.queryByText('Manage Students')).not.toBeInTheDocument();
   });
@@ -32,14 +33,20 @@ describe('Navbar Component', () => {
   test('should show appropriate navigation links based on user role (admin)', () => {
     render(<Navbar user={mockUser} userRole="admin" onLogout={mockLogout} setView={mockSetView} />);
     
+    expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Manage Students')).toBeInTheDocument();
   });
 
   test('should call setView when clicking on navigation links', () => {
     render(<Navbar user={mockUser} userRole="admin" onLogout={mockLogout} setView={mockSetView} />);
     
+    // Test management link
     fireEvent.click(screen.getByText('Manage Students'));
     expect(mockSetView).toHaveBeenCalledWith('management');
+    
+    // Test home link
+    fireEvent.click(screen.getByText('Home'));
+    expect(mockSetView).toHaveBeenCalledWith('default');
   });
 
   test('should call logout function when clicking on logout button', () => {

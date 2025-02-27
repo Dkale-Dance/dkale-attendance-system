@@ -321,6 +321,7 @@ describe('App Component', () => {
     
     // Wait for user data to load and navbar to appear with student options
     await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
       expect(screen.getByText('Profile')).toBeInTheDocument();
       expect(screen.queryByText('Manage Students')).not.toBeInTheDocument();
     });
@@ -342,6 +343,7 @@ describe('App Component', () => {
     
     // Wait for user data to load and navbar to appear with admin options
     await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
       expect(screen.getByText('Manage Students')).toBeInTheDocument();
       expect(screen.queryByText('Profile')).not.toBeInTheDocument();
     });
@@ -407,6 +409,43 @@ describe('App Component', () => {
     // just that the view was changed
     await waitFor(() => {
       expect(screen.queryByTestId('welcome-section')).not.toBeInTheDocument();
+    });
+  });
+  
+  it('navigates to home page when clicking Home link', async () => {
+    // Mock authenticated admin user (to test navigation from management to home)
+    const mockUser = { uid: 'admin123', email: 'admin@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    authService.userRepository.getRole.mockResolvedValueOnce('admin');
+    
+    render(<App />);
+    
+    // Wait for navbar to appear
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Manage Students')).toBeInTheDocument();
+    });
+    
+    // Navigate to management first
+    fireEvent.click(screen.getByText('Manage Students'));
+    
+    // Wait for management view
+    await waitFor(() => {
+      expect(screen.queryByTestId('welcome-section')).not.toBeInTheDocument();
+    });
+    
+    // Now click home link
+    fireEvent.click(screen.getByText('Home'));
+    
+    // Welcome section should be shown again
+    await waitFor(() => {
+      expect(screen.getByTestId('welcome-section')).toBeInTheDocument();
     });
   });
 });
