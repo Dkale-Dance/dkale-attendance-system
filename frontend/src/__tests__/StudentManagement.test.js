@@ -36,6 +36,26 @@ jest.mock('../components/StudentList', () => {
   };
 });
 
+jest.mock('../components/StudentFormView', () => {
+  return function MockStudentFormView({ onSuccess, onCancel, selectedStudent }) {
+    return (
+      <div data-testid="student-form-view">
+        <h2>{selectedStudent ? 'Edit Student' : 'Add New Student'}</h2>
+        <form
+          data-testid="student-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSuccess({ firstName: 'Test', lastName: 'User', email: 'test@example.com' });
+          }}
+        >
+          <button type="submit" data-testid="student-submit-button">Submit</button>
+        </form>
+        <button data-testid="cancel-button" onClick={onCancel}>Cancel</button>
+      </div>
+    );
+  };
+});
+
 jest.mock('../components/StudentForm', () => {
   return function MockStudentForm({ onSubmit }) {
     return (
@@ -83,77 +103,49 @@ describe('StudentManagement', () => {
     expect(screen.getByTestId('add-student-button')).toBeInTheDocument();
   });
 
-  test('shows add student form when add button clicked', () => {
+  test('switches to student form view when add button clicked', () => {
     render(<StudentManagement userRole="admin" />);
     
     fireEvent.click(screen.getByTestId('add-student-button'));
     
-    expect(screen.getByTestId('edit-student-form')).toBeInTheDocument();
-    expect(screen.getByText('Add New Student')).toBeInTheDocument();
+    // Should show form view component and hide the student list
+    expect(screen.getByTestId('student-form-view')).toBeInTheDocument();
+    expect(screen.queryByTestId('student-list')).not.toBeInTheDocument();
   });
 
-  test('submits new student form correctly', async () => {
-    const mockUser = { uid: 'user123', email: 'test@example.com' };
-    authService.register.mockResolvedValueOnce(mockUser);
-    studentService.initializeStudentProfile.mockResolvedValueOnce({});
-    
+  test('returns to list view after successful form submission', async () => {
     render(<StudentManagement userRole="admin" />);
     
     // Open add form
     fireEvent.click(screen.getByTestId('add-student-button'));
     
-    // Submit the form
+    // Verify we're in form view
+    expect(screen.getByTestId('student-form-view')).toBeInTheDocument();
+    
+    // Submit the form (the mock will call onSuccess directly)
     await act(async () => {
       fireEvent.submit(screen.getByTestId('student-form'));
     });
     
-    // Check if services were called correctly
+    // Verify we've returned to list view
     await waitFor(() => {
-      expect(authService.register).toHaveBeenCalledWith(
-        'test@example.com', 
-        'tempPassword123'
-      );
-      expect(studentService.initializeStudentProfile).toHaveBeenCalledWith(
-        'user123',
-        expect.objectContaining({
-          firstName: 'Test',
-          lastName: 'User'
-        })
-      );
-      expect(window.dispatchEvent).toHaveBeenCalled();
+      expect(screen.queryByTestId('student-form-view')).not.toBeInTheDocument();
+      expect(screen.getByTestId('student-list')).toBeInTheDocument();
     });
   });
 
-  test('handles form submission errors', async () => {
-    const errorMessage = 'Registration failed';
-    authService.register.mockRejectedValueOnce(new Error(errorMessage));
-    
+  test('returns to list view when cancel button is clicked', () => {
     render(<StudentManagement userRole="admin" />);
     
     // Open add form
     fireEvent.click(screen.getByTestId('add-student-button'));
-    
-    // Submit the form
-    await act(async () => {
-      fireEvent.submit(screen.getByTestId('student-form'));
-    });
-    
-    // Check if error message is displayed
-    await waitFor(() => {
-      expect(screen.getByTestId('error-message')).toHaveTextContent(errorMessage);
-    });
-  });
-
-  test('cancels form editing', () => {
-    render(<StudentManagement userRole="admin" />);
-    
-    // Open add form
-    fireEvent.click(screen.getByTestId('add-student-button'));
-    expect(screen.getByTestId('edit-student-form')).toBeInTheDocument();
+    expect(screen.getByTestId('student-form-view')).toBeInTheDocument();
     
     // Cancel editing
     fireEvent.click(screen.getByTestId('cancel-button'));
-    expect(screen.queryByTestId('edit-student-form')).not.toBeInTheDocument();
-    expect(screen.getByTestId('add-student-button')).toBeInTheDocument();
+    
+    // Should return to list view
+    expect(screen.queryByTestId('student-form-view')).not.toBeInTheDocument();
+    expect(screen.getByTestId('student-list')).toBeInTheDocument();
   });
 });

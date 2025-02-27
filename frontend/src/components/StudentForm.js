@@ -1,6 +1,7 @@
 // StudentForm.js
 import React, { useState } from 'react';
 import ErrorMessage from './ErrorMessage';
+import styles from './StudentForm.module.css';
 
 const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = false }) => {
   const [formData, setFormData] = useState({
@@ -32,9 +33,9 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
   };
 
   return (
-    <div className="student-form" data-testid="student-form">
+    <div className={styles['student-form']} data-testid="student-form">
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
+        <div className={styles['form-group']}>
           <label htmlFor="firstName">First Name</label>
           <input
             type="text"
@@ -44,10 +45,11 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
             onChange={handleChange}
             required
             data-testid="student-firstname-input"
+            placeholder="Enter first name"
           />
         </div>
         
-        <div className="form-group">
+        <div className={styles['form-group']}>
           <label htmlFor="lastName">Last Name</label>
           <input
             type="text"
@@ -57,11 +59,12 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
             onChange={handleChange}
             required
             data-testid="student-lastname-input"
+            placeholder="Enter last name"
           />
         </div>
         
         {!student && (
-          <div className="form-group">
+          <div className={styles['form-group']}>
             <label htmlFor="email">Email</label>
             <input
               type="email"
@@ -71,13 +74,14 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
               onChange={handleChange}
               required
               data-testid="student-email-input"
+              placeholder="Enter email address"
             />
           </div>
         )}
 
         {isAdminView && (
           <>
-            <div className="form-group">
+            <div className={styles['form-group']}>
               <label htmlFor="enrollmentStatus">Enrollment Status</label>
               <select
                 id="enrollmentStatus"
@@ -93,7 +97,7 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
               </select>
             </div>
             
-            <div className="form-group">
+            <div className={styles['form-group']}>
               <label htmlFor="balance">Balance ($)</label>
               <input
                 type="number"
@@ -104,6 +108,7 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
                 min="0"
                 step="0.01"
                 data-testid="student-balance-input"
+                placeholder="0.00"
               />
             </div>
           </>
