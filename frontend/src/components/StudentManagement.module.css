@@ -1,47 +1,63 @@
 .student-management {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.student-management h1 {
+  color: #343a40;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.student-management h2 {
+  color: #495057;
+  margin-bottom: 15px;
+}
+
+.unauthorized {
+  text-align: center;
+  padding: 50px;
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.add-button {
+  background-color: #282c34;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-bottom: 25px;
+  transition: all 0.2s ease;
+  display: inline-block;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  float: right;
+}
+
+.add-button:hover {
+  background-color: #444a57;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .student-management {
+    padding: 15px;
   }
   
-  .student-management h1 {
-    color: #343a40;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-  
-  .student-management h2 {
-    color: #495057;
-    margin-bottom: 15px;
-  }
-  
-  .unauthorized {
-    text-align: center;
-    padding: 50px;
-    color: #dc3545;
-    font-weight: bold;
-  }
-  
-  .student-management button {
-    background-color: #28a745;
-    color: white;
-    border: none;
+  .add-button {
     padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-right: 10px;
+    font-size: 14px;
     margin-bottom: 20px;
   }
-  
-  .student-management button:hover {
-    background-color: #218838;
+}
+
+@media (max-width: 480px) {
+  .add-button {
+    width: 100%;
+    float: none;
   }
-  
-  .student-management button.cancel-button {
-    background-color: #6c757d;
-  }
-  
-  .student-management button.cancel-button:hover {
-    background-color: #5a6268;
-  }
+}
