@@ -7,16 +7,29 @@ import { authService } from '../services/AuthService';
 import { studentService } from '../services/StudentService';
 
 // Mock the auth service
-jest.mock('../services/AuthService', () => ({
-  authService: {
-    login: jest.fn(),
-    register: jest.fn(),
-    logout: jest.fn(),
-    userRepository: {
-      getRole: jest.fn()
+jest.mock('../services/AuthService', () => {
+  // Create a mock implementation for onAuthStateChanged that can be customized per test
+  const onAuthStateChangedMock = jest.fn((callback) => {
+    // Default implementation - simulate no user
+    callback(null);
+    return jest.fn(); // Return dummy unsubscribe function
+  });
+  
+  return {
+    authService: {
+      login: jest.fn(),
+      register: jest.fn(),
+      logout: jest.fn(),
+      userRepository: {
+        getRole: jest.fn()
+      },
+      authRepository: {
+        onAuthStateChanged: onAuthStateChangedMock,
+        getCurrentUser: jest.fn()
+      }
     }
-  },
-}));
+  };
+});
 
 // Mock the student service
 jest.mock('../services/StudentService', () => ({
@@ -32,8 +45,20 @@ describe('App Component', () => {
     jest.clearAllMocks();
   });
 
-  it('renders LoginForm by default', () => {
+  it('renders LoginForm by default', async () => {
+    // Set auth state to null (not logged in)
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(null);
+      return jest.fn();
+    });
+    
     render(<App />);
+    
+    // Wait for loading state to finish
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-indicator')).not.toBeInTheDocument();
+    });
+    
     expect(screen.getByTestId('form-title')).toHaveTextContent('Login');
   });
 

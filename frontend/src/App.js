@@ -14,7 +14,7 @@ function App() {
   const [userRole, setUserRole] = useState(null);
   const [studentProfile, setStudentProfile] = useState(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading state
   const [view, setView] = useState("default"); // default, profile, management
 
   // Function to fetch user role when user is authenticated
@@ -31,18 +31,38 @@ function App() {
       }
     } catch (error) {
       setError("Failed to fetch user role: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Effect to fetch user role when the user state changes
+  // Effect to set up the auth state listener on component mount
   useEffect(() => {
-    if (user) {
-      fetchUserRole(user.uid);
-    } else {
-      setUserRole(null);
-      setStudentProfile(null);
-    }
-  }, [user]);
+    const authRepository = authService.authRepository;
+    
+    // Set up the auth state change listener
+    const unsubscribe = authRepository.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        // User is signed in
+        setUser(authUser);
+        fetchUserRole(authUser.uid);
+      } else {
+        // User is signed out
+        setUser(null);
+        setUserRole(null);
+        setStudentProfile(null);
+        setLoading(false);
+      }
+    });
+    
+    // Clean up the subscription when the component unmounts
+    return () => {
+      // Check if unsubscribe is a function before calling it
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, []);
 
   const handleAuth = async (email, password) => {
     setLoading(true);
@@ -93,6 +113,11 @@ function App() {
 
   // Render different content based on authentication state and user role
   const renderContent = () => {
+    // Show loading indicator while checking auth state
+    if (loading) {
+      return <div className="loading" data-testid="loading-indicator">Loading...</div>;
+    }
+    
     if (!user) {
       return (
         <LoginForm
@@ -101,11 +126,6 @@ function App() {
           onSwitchMode={() => setIsRegister(!isRegister)}
         />
       );
-    }
-
-    // Loading state while fetching role
-    if (loading) {
-      return <div className="loading">Loading...</div>;
     }
 
     // Profile editing view
