@@ -5,7 +5,8 @@ import LoginForm from "./components/LoginForm";
 import StudentManagement from "./components/StudentManagement";
 import StudentForm from "./components/StudentForm";
 import ErrorMessage from "./components/ErrorMessage";
-import logo from "./assets/logo.png"; // Import your logo
+import Navbar from "./components/Navbar";
+import logo from "./assets/logo.png";
 import "./App.css";
 
 function App() {
@@ -153,42 +154,36 @@ function App() {
       <div className="user-welcome" data-testid="welcome-section">
         <p data-testid="welcome-message">Welcome, {user.email}</p>
         
-        {userRole && (
-          <p className="user-role">Role: {userRole}</p>
-        )}
-        
         {userRole === "student" && studentProfile && (
           <div className="student-profile">
             <h2>Your Student Profile</h2>
             <p>Name: {studentProfile.firstName || ''} {studentProfile.lastName || ''}</p>
             <p>Status: {studentProfile.enrollmentStatus || 'Pending Payment'}</p>
             <p>Balance: ${(studentProfile.balance || 0).toFixed(2)}</p>
-            <button onClick={() => setView("profile")}>Edit Profile</button>
           </div>
         )}
-        
-        {userRole === "admin" && (
-          <button onClick={() => setView("management")}>Manage Students</button>
-        )}
-        
-        <button 
-          onClick={handleLogout}
-          data-testid="logout-button"
-          className="logout-button"
-        >
-          Logout
-        </button>
       </div>
     );
   };
 
   return (
     <div className="App" data-testid="app">
-      <header className="App-header">
-        <div className="logo-container">
-          <img src={logo} alt="Company Logo" className="app-logo" />
-        </div>
-      </header>
+      {/* Navbar is only shown when user is authenticated */}
+      <Navbar 
+        user={user} 
+        userRole={userRole} 
+        onLogout={handleLogout} 
+        setView={setView} 
+      />
+      
+      {/* Only show the logo on login/register screen */}
+      {!user && (
+        <header className="App-header">
+          <div className="logo-container">
+            <img src={logo} alt="Company Logo" className="app-logo" />
+          </div>
+        </header>
+      )}
       
       <main>
         {error && <ErrorMessage message={error} />}

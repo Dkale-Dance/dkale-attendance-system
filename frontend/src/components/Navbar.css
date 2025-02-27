@@ -1,0 +1,228 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 2rem;
+  background-color: #282c34;
+  color: white;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+}
+
+.navbar-container {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  overflow: visible;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
+  font-size: 1.3rem;
+  margin-right: 2rem;
+  min-width: max-content;
+}
+
+.navbar-user {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: max-content;
+  white-space: nowrap;
+  padding-left: 1rem;
+}
+
+.navbar-user-info {
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
+}
+
+.user-email {
+  font-size: 0.95rem;
+  margin: 0;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.navbar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  padding: 0 1rem;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+  color: white;
+  font-weight: bold;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.logout-button {
+  background-color: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: white;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 900px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+  
+  .navbar-container {
+    flex-wrap: wrap;
+  }
+  
+  .navbar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .navbar-toggle {
+    display: block;
+  }
+  
+  .navbar-links {
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+    order: 3;
+    padding: 0;
+  }
+  
+  .navbar-links.collapsed {
+    max-height: 0;
+  }
+  
+  .navbar-links.expanded {
+    max-height: 300px;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .nav-link {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem 0;
+  }
+  
+  .navbar-user {
+    order: 2;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar-container {
+    flex-direction: column;
+  }
+  
+  .navbar-user {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  
+  .navbar-user-info {
+    margin-bottom: 0;
+  }
+  
+  .user-email {
+    font-size: 0.85rem;
+    max-width: 150px;
+  }
+  
+  .logout-button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+/* Add a specific fix for the 1728px width */
+@media (min-width: 1700px) and (max-width: 1800px) {
+  .navbar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .navbar-links {
+    gap: 1rem;
+  }
+  
+  .navbar-brand {
+    margin-right: 1rem;
+  }
+  
+  .user-email {
+    max-width: 140px;
+  }
+  
+  .logout-button {
+    padding: 0.4rem 0.6rem;
+  }
+}

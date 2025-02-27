@@ -246,12 +246,206 @@ describe('App Component', () => {
       expect(screen.getByTestId('welcome-section')).toBeInTheDocument();
     });
 
-    // Click logout
-    fireEvent.click(screen.getByTestId('logout-button'));
+    // Click logout button in the navbar
+    fireEvent.click(screen.getByText('Logout'));
 
     // Wait for the login form to reappear
     await waitFor(() => {
       expect(screen.getByTestId('form-title')).toBeInTheDocument();
+    });
+  });
+
+  // New tests for navbar
+  it('does not render navbar when user is not authenticated', async () => {
+    // Set auth state to null (not logged in)
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(null);
+      return jest.fn();
+    });
+    
+    render(<App />);
+    
+    // Wait for loading state to finish
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-indicator')).not.toBeInTheDocument();
+    });
+    
+    // Navbar brand should not be in the document
+    expect(screen.queryByText('Dkale Dance')).not.toBeInTheDocument();
+  });
+
+  it('renders navbar when user is authenticated', async () => {
+    // Mock authenticated user
+    const mockUser = { uid: 'test123', email: 'test@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    authService.userRepository.getRole.mockResolvedValueOnce('student');
+    studentService.getStudentById.mockResolvedValueOnce({
+      id: 'test123',
+      firstName: 'Test',
+      lastName: 'User'
+    });
+    
+    render(<App />);
+    
+    // Wait for user data to load and navbar to appear
+    await waitFor(() => {
+      expect(screen.getByText('Dkale Dance')).toBeInTheDocument();
+      expect(screen.getByText('test@example.com')).toBeInTheDocument();
+    });
+  });
+
+  it('shows student-specific navigation options for student users', async () => {
+    // Mock authenticated student user
+    const mockUser = { uid: 'student123', email: 'student@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    authService.userRepository.getRole.mockResolvedValueOnce('student');
+    studentService.getStudentById.mockResolvedValueOnce({
+      id: 'student123',
+      firstName: 'Student',
+      lastName: 'User'
+    });
+    
+    render(<App />);
+    
+    // Wait for user data to load and navbar to appear with student options
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Profile')).toBeInTheDocument();
+      expect(screen.queryByText('Manage Students')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows admin-specific navigation options for admin users', async () => {
+    // Mock authenticated admin user
+    const mockUser = { uid: 'admin123', email: 'admin@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    authService.userRepository.getRole.mockResolvedValueOnce('admin');
+    
+    render(<App />);
+    
+    // Wait for user data to load and navbar to appear with admin options
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Manage Students')).toBeInTheDocument();
+      expect(screen.queryByText('Profile')).not.toBeInTheDocument();
+    });
+  });
+
+  it('navigates to profile page when clicking Profile link', async () => {
+    // Mock authenticated student user
+    const mockUser = { uid: 'student123', email: 'student@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    authService.userRepository.getRole.mockResolvedValueOnce('student');
+    studentService.getStudentById.mockResolvedValueOnce({
+      id: 'student123',
+      firstName: 'Student',
+      lastName: 'User'
+    });
+    
+    render(<App />);
+    
+    // Wait for navbar to appear
+    await waitFor(() => {
+      expect(screen.getByText('Profile')).toBeInTheDocument();
+    });
+    
+    // Click profile link
+    fireEvent.click(screen.getByText('Profile'));
+    
+    // Expect profile editor to be shown
+    await waitFor(() => {
+      expect(screen.getByText('Edit Your Profile')).toBeInTheDocument();
+    });
+  });
+
+  it('navigates to student management page when clicking Manage Students link', async () => {
+    // Mock authenticated admin user
+    const mockUser = { uid: 'admin123', email: 'admin@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    authService.userRepository.getRole.mockResolvedValueOnce('admin');
+    
+    render(<App />);
+    
+    // Wait for navbar to appear
+    await waitFor(() => {
+      expect(screen.getByText('Manage Students')).toBeInTheDocument();
+    });
+    
+    // Click manage students link
+    fireEvent.click(screen.getByText('Manage Students'));
+    
+    // Wait for student management component to be loaded
+    // For this test, we don't need to test StudentManagement itself
+    // just that the view was changed
+    await waitFor(() => {
+      expect(screen.queryByTestId('welcome-section')).not.toBeInTheDocument();
+    });
+  });
+  
+  it('navigates to home page when clicking Home link', async () => {
+    // Mock authenticated admin user (to test navigation from management to home)
+    const mockUser = { uid: 'admin123', email: 'admin@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    authService.userRepository.getRole.mockResolvedValueOnce('admin');
+    
+    render(<App />);
+    
+    // Wait for navbar to appear
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Manage Students')).toBeInTheDocument();
+    });
+    
+    // Navigate to management first
+    fireEvent.click(screen.getByText('Manage Students'));
+    
+    // Wait for management view
+    await waitFor(() => {
+      expect(screen.queryByTestId('welcome-section')).not.toBeInTheDocument();
+    });
+    
+    // Now click home link
+    fireEvent.click(screen.getByText('Home'));
+    
+    // Welcome section should be shown again
+    await waitFor(() => {
+      expect(screen.getByTestId('welcome-section')).toBeInTheDocument();
     });
   });
 });
