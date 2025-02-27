@@ -9,6 +9,7 @@ jest.mock("firebase/auth", () => {
   const actualAuth = jest.requireActual("firebase/auth");
   return {
     ...actualAuth,
+    auth: { currentUser: null }, // Add mock auth object
     signInWithEmailAndPassword: jest.fn(),
     createUserWithEmailAndPassword: jest.fn(),
     getAuth: jest.fn(),
@@ -58,17 +59,15 @@ describe("AuthService (Unit Test)", () => {
       uid: "12345", 
       email: "test@example.com"
     };
-    createUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    
+    // Create a mock for authRepository.register that returns the mock user
+    authRepository.register = jest.fn().mockResolvedValue(mockUser);
 
     // Perform registration
     const result = await authService.register("test@example.com", "password123");
 
-    // Verify Auth creation
-    expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
-      expect.anything(),
-      "test@example.com",
-      "password123"
-    );
+    // Verify auth repository was called with correct params
+    expect(authRepository.register).toHaveBeenCalledWith("test@example.com", "password123");
 
     // Verify role assignment
     expect(doc).toHaveBeenCalledWith(
@@ -135,30 +134,45 @@ describe("AuthService (Unit Test)", () => {
 
   it("should log in a registered user", async () => {
     const mockUser = { uid: "12345", email: "test@example.com" };
-    signInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    
+    // Create a mock implementation for login
+    authRepository.login = jest.fn().mockResolvedValue(mockUser);
+    
     const user = await authService.login("test@example.com", "password123");
-    expect(signInWithEmailAndPassword).toHaveBeenCalledWith(
-      expect.anything(),
-      "test@example.com",
-      "password123"
-    );
+    
+    expect(authRepository.login).toHaveBeenCalledWith("test@example.com", "password123");
     expect(user.email).toBe("test@example.com");
   });
 
   it("should not log in an unregistered user", async () => {
-    signInWithEmailAndPassword.mockRejectedValue(new Error("Invalid credentials"));
+    // Create a mock implementation that rejects
+    authRepository.login = jest.fn().mockRejectedValue(new Error("Invalid credentials"));
+    
     await expect(authService.login("unknown@example.com", "password123"))
       .rejects.toThrow("Invalid credentials");
   });
 
   it("should log out a user", async () => {
-    signOut.mockResolvedValue();
+    // Mock the auth object to be defined for this test
+    jest.mock("firebase/auth", () => ({
+      ...jest.requireActual("firebase/auth"),
+      auth: {},
+      signOut: jest.fn().mockResolvedValue(undefined)
+    }));
+    
+    // Create a new mock function for this test
+    const mockSignOut = jest.fn().mockResolvedValue(undefined);
+    authRepository.logout = jest.fn().mockImplementation(() => mockSignOut());
+    
     await authService.logout();
-    expect(signOut).toHaveBeenCalled();
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
   it("should handle logout errors", async () => {
-    signOut.mockRejectedValue(new Error("No user logged in"));
+    // Create a mock function that rejects
+    const mockSignOut = jest.fn().mockRejectedValue(new Error("No user logged in"));
+    authRepository.logout = jest.fn().mockImplementation(() => mockSignOut());
+    
     await expect(authService.logout()).rejects.toThrow("No user logged in");
   });
 
