@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import Navbar from '../components/Navbar';
 
 describe('Navbar Component', () => {
@@ -19,7 +19,8 @@ describe('Navbar Component', () => {
     render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} setView={mockSetView} />);
     
     expect(screen.getByText(mockUser.email)).toBeInTheDocument();
-    expect(screen.getByText(`Role: ${mockUserRole}`)).toBeInTheDocument();
+    // No longer showing role label
+    expect(screen.queryByText(`Role: ${mockUserRole}`)).not.toBeInTheDocument();
   });
 
   test('should show appropriate navigation links based on user role (student)', () => {
@@ -72,5 +73,20 @@ describe('Navbar Component', () => {
     // Click again to collapse
     fireEvent.click(menuButton);
     expect(navLinks).toHaveClass('collapsed');
+  });
+  
+  test('should have correct layout structure with nav links in center and user info on right', () => {
+    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} setView={mockSetView} />);
+    
+    // Check that the elements exist in the correct containers
+    const navLinksContainer = screen.getByTestId('nav-links');
+    const userContainer = screen.getByTestId('user-container');
+    
+    // User info should be in user container
+    expect(within(userContainer).getByText(mockUser.email)).toBeInTheDocument();
+    expect(within(userContainer).getByText('Logout')).toBeInTheDocument();
+    
+    // Nav links should be in nav links container
+    expect(within(navLinksContainer).getByText('Home')).toBeInTheDocument();
   });
 });

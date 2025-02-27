@@ -28,6 +28,11 @@
   object-fit: contain;
 }
 
+/* For navbar spacing */
+main {
+  padding-top: 20px;
+}
+
 .App-link {
   color: #61dafb;
 }

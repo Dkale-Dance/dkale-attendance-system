@@ -12,14 +12,9 @@ const NavLink = ({ label, onClick, className = '' }) => (
 );
 
 // UserInfo component - Single Responsibility Principle
-const UserInfo = ({ user, userRole }) => (
+const UserInfo = ({ user }) => (
   <div className="navbar-user-info">
     <p className="user-email">{user.email}</p>
-    {userRole && (
-      <div className="user-role-badge">
-        Role: {userRole}
-      </div>
-    )}
   </div>
 );
 
@@ -67,6 +62,19 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
   );
 };
 
+// UserSection component - Single Responsibility Principle
+const UserSection = ({ user, onLogout }) => (
+  <div className="navbar-user" data-testid="user-container">
+    <UserInfo user={user} />
+    <button 
+      className="logout-button" 
+      onClick={onLogout}
+    >
+      Logout
+    </button>
+  </div>
+);
+
 // Navbar component - Composition over inheritance
 const Navbar = ({ user, userRole, onLogout, setView }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -80,35 +88,29 @@ const Navbar = ({ user, userRole, onLogout, setView }) => {
 
   return (
     <nav className="navbar">
-      <div className="navbar-top">
-        <div className="navbar-brand">
-          Dkale Dance
+      <div className="navbar-container">
+        <div className="navbar-top">
+          <div className="navbar-brand">
+            Dkale Dance
+          </div>
+          
+          <button 
+            className="navbar-toggle" 
+            onClick={toggleNavbar}
+            aria-label="Toggle navigation"
+          >
+            ☰
+          </button>
         </div>
-        
-        <button 
-          className="navbar-toggle" 
-          onClick={toggleNavbar}
-          aria-label="Toggle navigation"
-        >
-          ☰
-        </button>
-      </div>
 
-      <div className="navbar-user">
-        <UserInfo user={user} userRole={userRole} />
-        <button 
-          className="logout-button" 
-          onClick={onLogout}
-        >
-          Logout
-        </button>
-      </div>
+        <NavigationLinks 
+          userRole={userRole} 
+          setView={setView} 
+          isExpanded={isExpanded} 
+        />
 
-      <NavigationLinks 
-        userRole={userRole} 
-        setView={setView} 
-        isExpanded={isExpanded} 
-      />
+        <UserSection user={user} onLogout={onLogout} />
+      </div>
     </nav>
   );
 };
