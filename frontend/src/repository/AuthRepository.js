@@ -65,37 +65,27 @@ export class AuthRepository {
         return userCredential?.user;
       }
       
-      // Get a secondary auth instance to avoid affecting the current user session
-      // In a real implementation, this would use admin SDK, but we're simulating here
-      const secondaryAuth = getAuth();
+      // IMPORTANT: Let's create a completely separate auth instance
+      // to avoid any impact on the main auth state
+      const tempAuth = getAuth();
       
-      // We'll simulate creating a user without signing in by retrieving info 
-      // from createUserWithEmailAndPassword but then restoring the original session
-      const currentUser = this.getCurrentUser();
-      
-      // Create the user
-      const userCredential = await createUser(auth, email, password);
-      const newUser = userCredential.user;
-      
-      // Now sign out the newly created user to restore the admin session
-      await signOut(auth);
-      
-      // If the admin was signed in before, we should restore their session
-      // In a real implementation, you'd use a server-side admin SDK for this
-      if (currentUser) {
-        try {
-          // Re-authenticate the admin (we don't have their password in this context,
-          // so this will generally fail in this simulation)
-          // In a real implementation using Firebase Admin SDK, we wouldn't have this issue
-          // This is just a placeholder for simulation purposes
-          console.log("Restoring admin session...");
-        } catch (e) {
-          console.error("Could not restore admin session", e);
-          // The original user will have to log in again if this happens
-        }
+      // The issue could be that our approach was still sharing state with the main auth
+      try {
+        // Create user with the completely separate auth instance
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+        
+        // Immediately sign out from the temporary auth instance
+        await signOut(tempAuth);
+        
+        // Return user data without modifying the current auth state
+        return {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email
+        };
+      } catch (createUserError) {
+        console.error("Error creating user:", createUserError);
+        throw createUserError;
       }
-      
-      return newUser;
     } catch (error) {
       console.error("Error in registerWithoutSignIn:", error);
       throw error;

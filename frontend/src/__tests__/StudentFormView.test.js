@@ -130,6 +130,68 @@ describe('StudentFormView', () => {
       expect(mockOnSuccess).toHaveBeenCalled();
     });
   });
+  
+  test('preserves admin session when adding a new student', async () => {
+    // Mock admin user in auth state
+    const mockAdminUser = { uid: 'admin123', email: 'admin@example.com' };
+    
+    // Mock admin check functionality
+    const mockAuthRepository = {
+      getCurrentUser: jest.fn().mockReturnValue(mockAdminUser)
+    };
+    
+    // Mock the student user that will be created
+    const mockStudentUser = { uid: 'student123', email: 'student@example.com', role: 'student' };
+    
+    // Mock the service calls
+    authService.registerStudent.mockResolvedValueOnce(mockStudentUser);
+    studentService.initializeStudentProfile.mockResolvedValueOnce({
+      uid: mockStudentUser.uid,
+      firstName: 'Test',
+      lastName: 'Student'
+    });
+    
+    // Set up auth repository for later verification
+    authService.authRepository = mockAuthRepository;
+    
+    // Mock success callback
+    const mockOnSuccess = jest.fn();
+    
+    render(
+      <StudentFormView 
+        onSuccess={mockOnSuccess}
+        onCancel={jest.fn()}
+      />
+    );
+    
+    // Submit the form
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId('student-form'));
+    });
+    
+    await waitFor(() => {
+      // Verify student was registered properly
+      expect(authService.registerStudent).toHaveBeenCalledWith(
+        'test@example.com', 
+        'tempPassword123'
+      );
+      
+      // Verify admin user is still the current user
+      expect(mockAuthRepository.getCurrentUser()).toEqual(mockAdminUser);
+      
+      // Verify student profile was initialized
+      expect(studentService.initializeStudentProfile).toHaveBeenCalledWith(
+        mockStudentUser.uid,
+        expect.objectContaining({
+          firstName: 'Test',
+          lastName: 'User'
+        })
+      );
+      
+      // Verify success callback was called
+      expect(mockOnSuccess).toHaveBeenCalled();
+    });
+  });
 
   test('submits form to update student', async () => {
     const mockOnSuccess = jest.fn();

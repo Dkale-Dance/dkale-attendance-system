@@ -448,4 +448,72 @@ describe('App Component', () => {
       expect(screen.getByTestId('welcome-section')).toBeInTheDocument();
     });
   });
+  
+  it('maintains user auth state when role fetch fails', async () => {
+    // Mock authenticated admin user
+    const mockUser = { uid: 'admin123', email: 'admin@example.com' };
+    
+    // Set auth state to authenticated user
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockUser);
+      return jest.fn();
+    });
+    
+    // Mock role fetching to fail with permission error
+    authService.userRepository.getRole.mockRejectedValueOnce(new Error('Missing or insufficient permissions'));
+    
+    render(<App />);
+    
+    // Wait for error message and auth state to be processed
+    await waitFor(() => {
+      // Should still show the user is logged in even with role error
+      expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+      
+      // Should display the error message (which isn't in a data-testid element)
+      expect(screen.getByText('Failed to fetch user role: Missing or insufficient permissions')).toBeInTheDocument();
+    });
+    
+    // User should still be able to logout
+    expect(screen.getByText('Logout')).toBeInTheDocument();
+  });
+  
+  it('maintains admin session after student creation', async () => {
+    // Mock authenticated admin user
+    const mockAdminUser = { uid: 'admin123', email: 'admin@example.com' };
+    
+    // Set auth state to authenticated admin
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockAdminUser);
+      return jest.fn();
+    });
+    
+    // Mock successful role fetch for admin
+    authService.userRepository.getRole.mockResolvedValueOnce('admin');
+    
+    render(<App />);
+    
+    // Wait for admin user to be authenticated
+    await waitFor(() => {
+      expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+      expect(screen.getByText('Manage Students')).toBeInTheDocument();
+    });
+    
+    // Navigate to Manage Students
+    fireEvent.click(screen.getByText('Manage Students'));
+    
+    // At this point, if the admin created a student, we'd expect them to stay logged in
+    // Simulate auth state being maintained (same admin user)
+    authService.authRepository.onAuthStateChanged.mockImplementation(callback => {
+      callback(mockAdminUser);
+      return jest.fn();
+    });
+    
+    // Mock role fetch again (needed since we're manually triggering auth state)
+    authService.userRepository.getRole.mockResolvedValueOnce('admin');
+    
+    // Check admin is still logged in
+    await waitFor(() => {
+      expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+    });
+  });
 });

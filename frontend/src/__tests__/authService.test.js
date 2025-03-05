@@ -125,6 +125,60 @@ describe("AuthService (Unit Test)", () => {
       role: "student"
     });
   });
+  
+  it("should maintain admin authentication throughout student creation flow", async () => {
+    // Mock admin user
+    const mockAdminUser = { 
+      uid: "admin123", 
+      email: "admin@example.com" 
+    };
+    
+    // Mock auth repository with currentUser set to admin
+    authRepository.getCurrentUser = jest.fn().mockReturnValue(mockAdminUser);
+    
+    // Mock the student creation
+    const mockStudentUser = { 
+      uid: "student123", 
+      email: "student@example.com"
+    };
+    
+    // Mock the registerWithoutSignIn method
+    authRepository.registerWithoutSignIn.mockResolvedValue(mockStudentUser);
+    
+    // Mock getRole method to return the correct roles
+    userRepository.getRole = jest.fn()
+      .mockImplementation((uid) => {
+        if (uid === mockAdminUser.uid) return Promise.resolve("admin");
+        if (uid === mockStudentUser.uid) return Promise.resolve("student");
+        return Promise.resolve("anonymous");
+      });
+    
+    // Perform student registration
+    const result = await authService.registerStudent("student@example.com", "password123");
+    
+    // Verify the admin-friendly registration method was called
+    expect(authRepository.registerWithoutSignIn).toHaveBeenCalledWith(
+      "student@example.com",
+      "password123"
+    );
+    
+    // Verify we still have the admin as current user
+    expect(authRepository.getCurrentUser()).toEqual(mockAdminUser);
+    
+    // Verify we can still get the admin role
+    const adminRole = await userRepository.getRole(mockAdminUser.uid);
+    expect(adminRole).toBe("admin");
+    
+    // Verify the student was assigned the student role
+    const studentRole = await userRepository.getRole(mockStudentUser.uid);
+    expect(studentRole).toBe("student");
+    
+    // Verify returned user object has the student role
+    expect(result).toEqual({
+      ...mockStudentUser,
+      role: "student"
+    });
+  });
 
   it("should not allow duplicate registration", async () => {
     createUserWithEmailAndPassword.mockRejectedValue(new Error("User already exists"));

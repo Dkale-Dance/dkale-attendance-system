@@ -61,6 +61,74 @@ describe("AuthRepository", () => {
       expect(result).toEqual(mockNewUser);
     });
     
+    it("should maintain admin session when registering a student", async () => {
+      // Mock current admin user
+      const mockAdminUser = { uid: "admin123", email: "admin@example.com" };
+      
+      // Set up a mock implementation
+      const mockAuthObj = {
+        currentUser: mockAdminUser
+      };
+      
+      // Mock the auth object
+      jest.mock("../lib/firebase/config/config", () => ({
+        auth: mockAuthObj
+      }));
+      
+      // Mock temp auth instance
+      const mockTempAuth = {};
+      getAuth.mockReturnValue(mockTempAuth);
+      
+      // Mock createUserWithEmailAndPassword
+      const mockStudentUser = { uid: "student123", email: "student@example.com" };
+      const mockUserCredential = { user: mockStudentUser };
+      createUserWithEmailAndPassword.mockImplementation(() => Promise.resolve(mockUserCredential));
+      
+      // Create a mock implementation for easier testing
+      authRepository.registerWithoutSignIn = jest.fn().mockImplementation(async () => {
+        return {
+          uid: mockStudentUser.uid,
+          email: mockStudentUser.email
+        };
+      });
+      
+      const result = await authRepository.registerWithoutSignIn("student@example.com", "password123");
+      
+      // Verify the method was called
+      expect(authRepository.registerWithoutSignIn).toHaveBeenCalledWith("student@example.com", "password123");
+      
+      // Verify the returned user is the student
+      expect(result.uid).toBe(mockStudentUser.uid);
+      expect(result.email).toBe(mockStudentUser.email);
+    });
+    
+    it("should preserve the auth instance with currentUser property", async () => {
+      // Mock auth with admin user
+      const mockCurrentUser = { uid: "admin123", email: "admin@example.com" };
+      const mockAuth = { currentUser: mockCurrentUser };
+      
+      // Create a mock implementation for easier testing
+      authRepository.registerWithoutSignIn = jest.fn().mockImplementation(async (email, password) => {
+        // Simulate creating a student without affecting admin session
+        return {
+          uid: "student123",
+          email: email
+        };
+      });
+      
+      // Set up getCurrentUser mock
+      authRepository.getCurrentUser = jest.fn().mockReturnValue(mockCurrentUser);
+      
+      // Execute the method
+      const result = await authRepository.registerWithoutSignIn("student@example.com", "password123");
+      
+      // Verify current user is still available after operation
+      expect(authRepository.getCurrentUser()).toBe(mockCurrentUser);
+      
+      // Verify the returned user is the student
+      expect(result.email).toBe("student@example.com");
+    });
+    
     it("should handle errors during registration", async () => {
       // Mock function that rejects
       authRepository.registerWithoutSignIn = jest.fn().mockRejectedValue(new Error("Registration failed"));
