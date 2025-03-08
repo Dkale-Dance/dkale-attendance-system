@@ -1,4 +1,4 @@
-// StudentService.js
+// StudentService.js - FIXED version
 import { studentRepository } from "../repository/StudentRepository";
 
 export default class StudentService {
@@ -15,14 +15,22 @@ export default class StudentService {
   }
 
   async initializeStudentProfile(userId, initialData = {}) {
-    // Set initial student data when a user with role "student" is created
-    const studentData = {
-      enrollmentStatus: "Pending Payment",
-      balance: 0,
-      ...initialData
-    };
+    try {
+      // Set initial student data when a user with role "student" is created
+      const studentData = {
+        enrollmentStatus: "Pending Payment",
+        balance: 0,
+        role: "student", // Always ensure role is explicitly set
+        ...initialData
+      };
 
-    return this.studentRepository.updateStudent(userId, studentData);
+      // Use the repository's setStudentData method instead of updateStudent
+      // This ensures the document is created even if it doesn't exist
+      return this.studentRepository.setStudentData(userId, studentData);
+    } catch (error) {
+      console.error("Error initializing student profile:", error);
+      throw new Error(`Failed to initialize student profile: ${error.message}`);
+    }
   }
 
   async changeEnrollmentStatus(studentId, newStatus) {

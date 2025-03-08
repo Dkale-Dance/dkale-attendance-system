@@ -1,4 +1,4 @@
-// StudentFormView.js
+// StudentFormView.js - FINAL FIX
 import React, { useState } from 'react';
 import StudentForm from './StudentForm';
 import ErrorMessage from './ErrorMessage';
@@ -9,33 +9,41 @@ import styles from './StudentFormView.module.css';
 // This component is solely responsible for managing the add/edit student form
 const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmitForm = async (formData) => {
+    setError('');
+    setLoading(true);
+    
     try {
       if (selectedStudent) {
         // Update existing student
         await studentService.updateStudent(selectedStudent.id, formData);
-      } else {
-        // Create a new user with student role
-        const { email, firstName, lastName } = formData;
-        const password = "tempPassword123"; // In a real app, generate a random password or implement invitation flow
-        
-        // Register the user with Firebase Auth
-        const user = await authService.register(email, password);
-        
-        // Update the user profile with student details
-        await studentService.initializeStudentProfile(user.uid, {
-          firstName,
-          lastName
-        });
+        setLoading(false);
+        onSuccess();
+        return;
       }
       
-      setError('');
+      // Create a new user with student role
+      const { email, firstName, lastName } = formData;
+      const password = "tempPassword123"; // In a real app, generate a random password or implement invitation flow
       
-      // Call the success callback (which should redirect back to list view)
+      // First create auth account
+      const user = await authService.registerStudent(email, password);
+      
+      // Initialize the student profile
+      await studentService.initializeStudentProfile(user.uid, {
+        firstName,
+        lastName,
+        email
+      });
+      
+      setLoading(false);
       onSuccess();
     } catch (err) {
+      console.error("Student creation error:", err);
       setError(err.message);
+      setLoading(false);
     }
   };
 
@@ -50,6 +58,7 @@ const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
         onSubmit={handleSubmitForm} 
         buttonText={selectedStudent ? "Update Student" : "Add Student"}
         isAdminView={true}
+        disabled={loading}
       />
       
       <div className={styles.buttons}>
@@ -57,10 +66,13 @@ const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
           onClick={onCancel}
           data-testid="cancel-button"
           className={styles['cancel-button']}
+          disabled={loading}
         >
           Cancel
         </button>
       </div>
+      
+      {loading && <div className="loading">Processing...</div>}
     </div>
   );
 };

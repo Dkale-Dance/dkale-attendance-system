@@ -22,16 +22,35 @@ function App() {
   const fetchUserRole = async (userId) => {
     try {
       const userRepository = authService.userRepository;
+      
+      // Make sure we have a valid userId before attempting to fetch role
+      if (!userId) {
+        setError("Invalid user ID");
+        setUserRole(null);
+        setLoading(false);
+        return;
+      }
+      
+      // Get the user role
       const role = await userRepository.getRole(userId);
       setUserRole(role);
 
       // If the user is a student, fetch their profile
       if (role === "student") {
-        const profile = await studentService.getStudentById(userId);
-        setStudentProfile(profile || { id: userId });
+        try {
+          const profile = await studentService.getStudentById(userId);
+          setStudentProfile(profile || { id: userId });
+        } catch (profileError) {
+          console.error("Error fetching student profile:", profileError);
+          // Don't fail the entire auth process if profile fetch fails
+          setStudentProfile({ id: userId });
+        }
       }
     } catch (error) {
+      console.error("Error fetching user role:", error);
       setError("Failed to fetch user role: " + error.message);
+      // Clear user role but maintain user authenticated state
+      setUserRole(null);
     } finally {
       setLoading(false);
     }
@@ -64,7 +83,7 @@ function App() {
       }
     };
   }, []);
-
+  
   const handleAuth = async (email, password) => {
     setLoading(true);
     setError(""); // Clear previous error messages
@@ -73,7 +92,10 @@ function App() {
       if (isRegister) {
         authenticatedUser = await authService.register(email, password);
       } else {
+        // Here's where we need to modify the login to save credentials for admin users
         authenticatedUser = await authService.login(email, password);
+        
+        // Note: The login method in AuthService now saves admin credentials securely if user is an admin
       }
       setUser(authenticatedUser);
       setView("default");
