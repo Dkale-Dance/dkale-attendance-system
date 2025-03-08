@@ -83,7 +83,7 @@ function App() {
       }
     };
   }, []);
-
+  
   const handleAuth = async (email, password) => {
     setLoading(true);
     setError(""); // Clear previous error messages
@@ -92,7 +92,10 @@ function App() {
       if (isRegister) {
         authenticatedUser = await authService.register(email, password);
       } else {
+        // Here's where we need to modify the login to save credentials for admin users
         authenticatedUser = await authService.login(email, password);
+        
+        // Note: The login method in AuthService now saves admin credentials securely if user is an admin
       }
       setUser(authenticatedUser);
       setView("default");

@@ -1,5 +1,5 @@
-// StudentRepository.js
-import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
+// StudentRepository.js - FIXED version
+import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 export class StudentRepository {
   constructor() {
@@ -27,7 +27,11 @@ export class StudentRepository {
 
   async updateStudent(studentId, updateData) {
     const userRef = doc(this.db, this.collectionName, studentId);
-    await updateDoc(userRef, updateData);
+    
+    // Use setDoc with merge option instead of updateDoc
+    // This ensures the document is created if it doesn't exist
+    await setDoc(userRef, updateData, { merge: true });
+    
     return { id: studentId, ...updateData };
   }
 
@@ -73,6 +77,14 @@ export class StudentRepository {
       ...doc.data(),
       id: doc.id
     }));
+  }
+  
+  // New method: Create or update a student document directly
+  // This ensures the document exists when initializing profile
+  async setStudentData(studentId, data) {
+    const userRef = doc(this.db, this.collectionName, studentId);
+    await setDoc(userRef, data, { merge: true });
+    return { id: studentId, ...data };
   }
 }
 

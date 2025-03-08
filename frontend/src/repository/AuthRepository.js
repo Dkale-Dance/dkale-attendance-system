@@ -1,19 +1,19 @@
+// AuthRepository.js - FINAL FIX
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  createUserWithEmailAndPassword as createUser, // Alias for clarity
   signOut,
   setPersistence,
   browserLocalPersistence,
   onAuthStateChanged
 } from "firebase/auth";
 import { auth } from "../lib/firebase/config/config";
-import { getAuth } from "firebase/auth";
 
 export class AuthRepository {
   constructor() {
     // Initialize persistence when repository is created
     this.initializePersistence();
+    this._adminCredentials = null;
   }
 
   // Set Firebase persistence to local to persist auth state on refresh
@@ -49,53 +49,74 @@ export class AuthRepository {
     return userCredential.user;
   }
 
+  // Temporarily store admin credentials securely in memory (not localStorage)
+  // This is needed for re-authenticating after student creation
+  saveAdminCredentials(email, password) {
+    this._adminCredentials = { email, password };
+  }
+
+  clearAdminCredentials() {
+    this._adminCredentials = null;
+  }
+
+  getAdminCredentials() {
+    return this._adminCredentials;
+  }
+
   /**
-   * Create a new user without signing them in (used by admins to create student accounts)
-   * This ensures the admin doesn't get logged out when creating a student account
+   * Create a new user and then restore admin session
    * @param {string} email - Student email
    * @param {string} password - Temporary password for student
+   * @param {string} adminEmail - Current admin email
+   * @param {string} adminPassword - Current admin password
    * @returns {Promise<Object>} The newly created user
    */
-  async registerWithoutSignIn(email, password) {
+  async createUserAndRestoreAdmin(email, password, adminEmail, adminPassword) {
+    // Store the current auth state
+    let newUserData = null;
+    
     try {
-      // Handle testing environment where auth might be undefined
-      if (!auth) {
-        // In testing environment
-        const userCredential = await createUserWithEmailAndPassword(undefined, email, password);
-        return userCredential?.user;
-      }
+      // Step 1: Create the new student user (this will automatically sign them in)
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // IMPORTANT: Let's create a completely separate auth instance
-      // to avoid any impact on the main auth state
-      const tempAuth = getAuth();
+      // Step 2: Capture the new user's info
+      newUserData = {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email
+      };
       
-      // The issue could be that our approach was still sharing state with the main auth
-      try {
-        // Create user with the completely separate auth instance
-        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
-        
-        // Immediately sign out from the temporary auth instance
-        await signOut(tempAuth);
-        
-        // Return user data without modifying the current auth state
-        return {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email
-        };
-      } catch (createUserError) {
-        console.error("Error creating user:", createUserError);
-        throw createUserError;
-      }
+      // Step 3: Sign out the student
+      await signOut(auth);
+      
+      // Step 4: Re-authenticate as admin
+      const adminCredential = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+      
+      // Return the student user info without disrupting admin session
+      return newUserData;
     } catch (error) {
-      console.error("Error in registerWithoutSignIn:", error);
+      // If any part fails, try to restore admin session anyway
+      try {
+        if (adminEmail && adminPassword) {
+          await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+        }
+      } catch (loginError) {
+        console.error("Failed to restore admin session:", loginError);
+      }
+      
+      // Re-throw the original error
       throw error;
     }
   }
 
-  async login(email, password) {  
-    // Handle testing environment where auth might be undefined
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+  async login(email, password) {
+    try {
+      // Handle testing environment where auth might be undefined
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      return userCredential.user;
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
   }
 
   async logout() {
@@ -103,8 +124,11 @@ export class AuthRepository {
     if (auth) {
       await signOut(auth);
     }
+    
+    // Clear admin credentials when logging out
+    this.clearAdminCredentials();
   }
 }
 
-// ✅ Default export using the real Firebase
+// Default export using the real Firebase
 export const authRepository = new AuthRepository();
