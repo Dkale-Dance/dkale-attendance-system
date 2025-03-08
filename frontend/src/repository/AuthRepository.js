@@ -89,7 +89,7 @@ export class AuthRepository {
       await signOut(auth);
       
       // Step 4: Re-authenticate as admin
-      const adminCredential = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+      await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
       
       // Return the student user info without disrupting admin session
       return newUserData;
