@@ -60,7 +60,7 @@ describe("StudentRepository (Unit Test)", () => {
 
     // Assert
     expect(doc).toHaveBeenCalledWith(mockFirestore, "users", mockStudentData.id);
-    expect(updateDoc).toHaveBeenCalledWith(mockDocRef, updateData);
+    expect(setDoc).toHaveBeenCalledWith(mockDocRef, updateData, { merge: true });
   });
 
   it("should get a student by ID from the users collection", async () => {

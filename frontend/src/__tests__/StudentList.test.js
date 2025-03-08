@@ -73,6 +73,9 @@ describe('StudentList', () => {
   });
 
   it('filters students by status', async () => {
+    // Mock successful retrieval of filtered students
+    studentService.getStudentsByStatus.mockResolvedValue([mockStudents[0]]);
+    
     render(<StudentList />);
     
     // Wait for the initial loading to finish
@@ -85,18 +88,18 @@ describe('StudentList', () => {
       target: { value: 'Enrolled' }
     });
     
+    // Wait for service call
     await waitFor(() => {
       expect(studentService.getStudentsByStatus).toHaveBeenCalledWith('Enrolled');
     });
     
-    // Wait for loading to finish after the filter change
+    // Wait for loading to finish after the filter change and ensure state has updated
     await waitFor(() => {
       expect(screen.queryByTestId('loading-message')).not.toBeInTheDocument();
+      // Should only show the enrolled student
+      expect(screen.getByTestId('student-row-student1')).toBeInTheDocument();
+      expect(screen.queryByTestId('student-row-student2')).not.toBeInTheDocument();
     });
-    
-    // Should only show the enrolled student
-    expect(screen.getByTestId('student-row-student1')).toBeInTheDocument();
-    expect(screen.queryByTestId('student-row-student2')).not.toBeInTheDocument();
   });
 
   it('changes student status', async () => {
@@ -106,13 +109,25 @@ describe('StudentList', () => {
       expect(screen.queryByTestId('loading-message')).not.toBeInTheDocument();
     });
     
+    // Mock successful status change
+    studentService.changeEnrollmentStatus.mockResolvedValue({
+      id: 'student1',
+      enrollmentStatus: 'Inactive'
+    });
+    
     // Change status for the first student
     fireEvent.change(screen.getByTestId('status-select-student1'), {
       target: { value: 'Inactive' }
     });
     
+    // Wait for both the service call and the state update
     await waitFor(() => {
       expect(studentService.changeEnrollmentStatus).toHaveBeenCalledWith('student1', 'Inactive');
+    });
+    
+    // Wait for component to fully update after state changes
+    await waitFor(() => {
+      expect(screen.getByTestId('status-select-student1').value).toBe('Inactive');
     });
   });
 
@@ -123,11 +138,24 @@ describe('StudentList', () => {
       expect(screen.queryByTestId('loading-message')).not.toBeInTheDocument();
     });
     
+    // Mock successful removal
+    studentService.removeStudent.mockResolvedValue(true);
+    
+    // Mock successful fetchStudents after removal
+    studentService.getAllStudents.mockResolvedValue([mockStudents[1]]);
+    
     // Click remove button for first student (zero balance)
     fireEvent.click(screen.getByTestId('remove-button-student1'));
     
+    // Wait for service call
     await waitFor(() => {
       expect(studentService.removeStudent).toHaveBeenCalledWith('student1');
+    });
+    
+    // Wait for component update after student removal
+    await waitFor(() => {
+      // Check that the student1 row is no longer present
+      expect(screen.queryByTestId('student-row-student1')).not.toBeInTheDocument();
     });
   });
 
@@ -155,6 +183,11 @@ describe('StudentList', () => {
     // Change status for first student
     fireEvent.change(screen.getByTestId('status-select-student1'), {
       target: { value: 'Inactive' }
+    });
+    
+    // Wait for both the service call and error state update
+    await waitFor(() => {
+      expect(studentService.changeEnrollmentStatus).toHaveBeenCalledWith('student1', 'Inactive');
     });
     
     // Check if the error message is displayed

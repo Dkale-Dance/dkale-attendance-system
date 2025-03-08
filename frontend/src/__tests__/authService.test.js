@@ -49,6 +49,14 @@ describe("AuthService (Unit Test)", () => {
     // Mock registerWithoutSignIn method
     authRepository.registerWithoutSignIn = jest.fn();
     
+    // Mock getAdminCredentials and saveAdminCredentials methods
+    authRepository.getAdminCredentials = jest.fn().mockReturnValue({
+      email: "admin@example.com",
+      password: "admin123"
+    });
+    authRepository.saveAdminCredentials = jest.fn();
+    authRepository.createUserAndRestoreAdmin = jest.fn();
+    
     userRepository = new UserRepository();
     authService = new AuthService(authRepository, userRepository);
   });
@@ -95,16 +103,18 @@ describe("AuthService (Unit Test)", () => {
       email: "student@example.com"
     };
     
-    // Mock the registerWithoutSignIn method
-    authRepository.registerWithoutSignIn.mockResolvedValue(mockUser);
+    // Mock the createUserAndRestoreAdmin method
+    authRepository.createUserAndRestoreAdmin.mockResolvedValue(mockUser);
 
     // Perform student registration
     const result = await authService.registerStudent("student@example.com", "password123");
 
     // Verify the admin-friendly registration method was called
-    expect(authRepository.registerWithoutSignIn).toHaveBeenCalledWith(
+    expect(authRepository.createUserAndRestoreAdmin).toHaveBeenCalledWith(
       "student@example.com",
-      "password123"
+      "password123",
+      "admin@example.com",
+      "admin123"
     );
 
     // Verify role assignment
@@ -142,8 +152,8 @@ describe("AuthService (Unit Test)", () => {
       email: "student@example.com"
     };
     
-    // Mock the registerWithoutSignIn method
-    authRepository.registerWithoutSignIn.mockResolvedValue(mockStudentUser);
+    // Mock the createUserAndRestoreAdmin method
+    authRepository.createUserAndRestoreAdmin.mockResolvedValue(mockStudentUser);
     
     // Mock getRole method to return the correct roles
     userRepository.getRole = jest.fn()
@@ -157,9 +167,11 @@ describe("AuthService (Unit Test)", () => {
     const result = await authService.registerStudent("student@example.com", "password123");
     
     // Verify the admin-friendly registration method was called
-    expect(authRepository.registerWithoutSignIn).toHaveBeenCalledWith(
+    expect(authRepository.createUserAndRestoreAdmin).toHaveBeenCalledWith(
       "student@example.com",
-      "password123"
+      "password123",
+      "admin@example.com",
+      "admin123"
     );
     
     // Verify we still have the admin as current user

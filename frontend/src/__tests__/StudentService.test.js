@@ -6,7 +6,8 @@ const mockStudentRepository = {
     updateStudent: jest.fn(),
     removeStudent: jest.fn(),
     getStudentsByStatus: jest.fn(),
-    getAllStudents: jest.fn()
+    getAllStudents: jest.fn(),
+    setStudentData: jest.fn()
   };
   
   // Mock the StudentRepository module BEFORE importing StudentService
@@ -69,10 +70,11 @@ const mockStudentRepository = {
       const expectedData = {
         enrollmentStatus: "Pending Payment",
         balance: 0,
+        role: "student",
         ...initialData
       };
       
-      mockStudentRepository.updateStudent.mockResolvedValue({ 
+      mockStudentRepository.setStudentData.mockResolvedValue({ 
         id: userId, 
         ...expectedData 
       });
@@ -81,7 +83,7 @@ const mockStudentRepository = {
       const result = await studentService.initializeStudentProfile(userId, initialData);
   
       // Assert
-      expect(mockStudentRepository.updateStudent).toHaveBeenCalledWith(userId, expectedData);
+      expect(mockStudentRepository.setStudentData).toHaveBeenCalledWith(userId, expectedData);
       expect(result).toHaveProperty("id", userId);
       expect(result).toHaveProperty("firstName", "John");
     });
