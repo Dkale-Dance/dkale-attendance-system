@@ -4,6 +4,7 @@ import { studentService } from "./services/StudentService";
 import LoginForm from "./components/LoginForm";
 import StudentManagement from "./components/StudentManagement";
 import StudentForm from "./components/StudentForm";
+import AttendanceDashboard from "./components/AttendanceDashboard";
 import ErrorMessage from "./components/ErrorMessage";
 import Navbar from "./components/Navbar";
 import logo from "./assets/logo.png";
@@ -169,6 +170,11 @@ function App() {
     // Student management view (for admins)
     if (view === "management" && userRole === "admin") {
       return <StudentManagement userRole={userRole} />;
+    }
+
+    // Attendance dashboard view (for admins)
+    if (view === "attendance" && userRole === "admin") {
+      return <AttendanceDashboard userRole={userRole} />;
     }
 
     // Default welcome view

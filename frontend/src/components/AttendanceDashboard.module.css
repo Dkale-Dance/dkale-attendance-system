@@ -1,0 +1,145 @@
+.attendance-dashboard {
+  padding: 20px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.date-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-picker {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.unauthorized {
+  color: #d32f2f;
+  text-align: center;
+  padding: 40px 0;
+  font-weight: bold;
+}
+
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  border: 1px solid #ddd;
+}
+
+.attendance-table th,
+.attendance-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.attendance-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.attendance-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.attendance-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.attendance-select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.attendance-select.present {
+  background-color: #e8f5e9;
+}
+
+.attendance-select.absent {
+  background-color: #ffebee;
+}
+
+.attendance-select.late {
+  background-color: #fff8e1;
+}
+
+.attendance-select.excused {
+  background-color: #e3f2fd;
+}
+
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.bulk-status-select {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  min-width: 150px;
+}
+
+.apply-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background-color: #2196f3;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.apply-button:hover {
+  background-color: #1976d2;
+}
+
+.apply-button:disabled {
+  background-color: #bdbdbd;
+  cursor: not-allowed;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #757575;
+  display: block;
+  margin-top: 4px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 18px;
+  color: #2196f3;
+}
