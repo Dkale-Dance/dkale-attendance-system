@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { attendanceService } from '../services/AttendanceService';
+import StudentAttendanceRow from './StudentAttendanceRow';
+import BulkActionConfirmation from './BulkActionConfirmation';
 import ErrorMessage from './ErrorMessage';
 import styles from './AttendanceDashboard.module.css';
 
@@ -19,6 +22,10 @@ const AttendanceDashboard = ({ userRole }) => {
   const [error, setError] = useState('');
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [bulkStatus, setBulkStatus] = useState('present');
+  // We no longer need bulk attributes as per the new design
+  const [recentlyUpdated, setRecentlyUpdated] = useState({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [unsubscribe, setUnsubscribe] = useState(null);
   
   // Function to fetch attendance data for the selected date
   const fetchAttendanceData = useCallback(async (date) => {
@@ -36,6 +43,75 @@ const AttendanceDashboard = ({ userRole }) => {
     }
   }, []);
   
+  // Set up real-time listener for attendance updates
+  useEffect(() => {
+    if (userRole !== 'admin') return;
+    
+    // Clean up previous listener if it exists
+    if (unsubscribe) {
+      unsubscribe();
+    }
+    
+    const dateStr = formatDateForInput(selectedDate);
+    const db = getFirestore();
+    const attendanceRef = doc(db, 'attendance', dateStr);
+    
+    // Set up new listener
+    const newUnsubscribe = onSnapshot(
+      attendanceRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const newAttendanceData = docSnapshot.data();
+          
+          // Update attendanceData with real-time data
+          setAttendanceData(prevData => {
+            const updatedData = prevData.map(student => {
+              const newAttendance = newAttendanceData[student.id];
+              
+              // If attendance has changed, mark as recently updated
+              if (newAttendance && 
+                  (!student.attendance || 
+                    student.attendance.status !== newAttendance.status ||
+                    JSON.stringify(student.attendance.attributes) !== JSON.stringify(newAttendance.attributes))) {
+                setRecentlyUpdated(prev => ({
+                  ...prev,
+                  [student.id]: true
+                }));
+                
+                // Clear the "recently updated" flag after 5 seconds
+                setTimeout(() => {
+                  setRecentlyUpdated(prev => ({
+                    ...prev,
+                    [student.id]: false
+                  }));
+                }, 5000);
+              }
+              
+              return {
+                ...student,
+                attendance: newAttendance || null
+              };
+            });
+            
+            return updatedData;
+          });
+        }
+      },
+      (error) => {
+        console.error("Error listening to attendance updates:", error);
+      }
+    );
+    
+    setUnsubscribe(() => newUnsubscribe);
+    
+    // Cleanup on unmount or when date changes
+    return () => {
+      if (newUnsubscribe) {
+        newUnsubscribe();
+      }
+    };
+  }, [selectedDate, userRole]);
+  
   // Load data when the component mounts or when the selected date changes
   useEffect(() => {
     if (userRole === 'admin') {
@@ -50,31 +126,33 @@ const AttendanceDashboard = ({ userRole }) => {
   };
   
   // Handle status change for a single student
-  const handleStatusChange = async (studentId, newStatus) => {
+  const handleStatusChange = async (studentId, newStatus, attributes = {}) => {
     try {
       setError('');
-      await attendanceService.markAttendance(selectedDate, studentId, newStatus);
+      await attendanceService.updateAttendanceWithFee(selectedDate, studentId, newStatus, attributes);
       
-      // Update the local state to avoid a full reload
-      setAttendanceData(attendanceData.map(student => 
-        student.id === studentId 
-          ? {
-              ...student,
-              attendance: { 
-                status: newStatus, 
-                timestamp: new Date() 
-              }
-            } 
-          : student
-      ));
+      // Real-time listener will update the UI
     } catch (err) {
       setError(err.message);
       console.error('Error updating attendance status:', err);
     }
   };
   
+  // Handle attribute change for a single student
+  const handleAttributeChange = async (studentId, status, attributes) => {
+    try {
+      setError('');
+      await attendanceService.updateAttendanceWithFee(selectedDate, studentId, status, attributes);
+      
+      // Real-time listener will update the UI
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating attendance attributes:', err);
+    }
+  };
+  
   // Handle checkbox selection for bulk actions
-  const handleCheckboxChange = (studentId) => {
+  const handleStudentSelect = (studentId) => {
     setSelectedStudents(prevSelected => {
       if (prevSelected.includes(studentId)) {
         return prevSelected.filter(id => id !== studentId);
@@ -95,7 +173,19 @@ const AttendanceDashboard = ({ userRole }) => {
     }
   };
   
-  // Apply bulk status change
+  // Bulk attributes are no longer needed with the new design
+  
+  // Show confirmation dialog for bulk action
+  const handleShowBulkConfirmation = () => {
+    if (selectedStudents.length === 0) {
+      setError('No students selected');
+      return;
+    }
+    
+    setShowConfirmation(true);
+  };
+  
+  // Apply bulk status change with fee
   const applyBulkAction = async () => {
     if (selectedStudents.length === 0) {
       setError('No students selected');
@@ -104,36 +194,28 @@ const AttendanceDashboard = ({ userRole }) => {
     
     try {
       setError('');
-      await attendanceService.bulkMarkAttendance(selectedDate, selectedStudents, bulkStatus);
+      await attendanceService.bulkUpdateAttendanceWithFee(
+        selectedDate, 
+        selectedStudents, 
+        bulkStatus, 
+        {} // Empty attributes for bulk update since we're only setting status
+      );
       
-      // Update the local state to avoid a full reload
-      setAttendanceData(attendanceData.map(student => 
-        selectedStudents.includes(student.id) 
-          ? {
-              ...student,
-              attendance: { 
-                status: bulkStatus, 
-                timestamp: new Date() 
-              }
-            } 
-          : student
-      ));
+      // Real-time listener will update the UI
       
       // Clear the selection after applying
       setSelectedStudents([]);
+      setShowConfirmation(false);
     } catch (err) {
       setError(err.message);
       console.error('Error applying bulk action:', err);
     }
   };
   
-  // Format timestamp for display
-  const formatTimestamp = (timestamp) => {
-    if (!timestamp) return '';
-    
-    const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
-    return date.toLocaleTimeString();
-  };
+  // Get selected students with their attendance data
+  const selectedStudentsWithData = useMemo(() => {
+    return attendanceData.filter(student => selectedStudents.includes(student.id));
+  }, [attendanceData, selectedStudents]);
   
   // Only admin can access the attendance dashboard
   if (userRole !== 'admin') {
@@ -171,21 +253,24 @@ const AttendanceDashboard = ({ userRole }) => {
       ) : (
         <>
           <div className={styles['bulk-actions']} data-testid="bulk-actions">
-            <label htmlFor="bulk-status-select">Bulk Action:</label>
-            <select
-              id="bulk-status-select"
-              value={bulkStatus}
-              onChange={(e) => setBulkStatus(e.target.value)}
-              className={styles['bulk-status-select']}
-              data-testid="bulk-status-select"
-            >
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="late">Late</option>
-              <option value="excused">Excused</option>
-            </select>
+            <div>
+              <label htmlFor="bulk-status-select">Bulk Action:</label>
+              <select
+                id="bulk-status-select"
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className={styles['bulk-status-select']}
+                data-testid="bulk-status-select"
+              >
+                <option value="present">Present</option>
+                <option value="absent">Absent ($5)</option>
+                <option value="medicalAbsence">Medical Absence</option>
+                <option value="holiday">Holiday</option>
+              </select>
+            </div>
+            
             <button
-              onClick={applyBulkAction}
+              onClick={handleShowBulkConfirmation}
               disabled={selectedStudents.length === 0}
               className={styles['apply-button']}
               data-testid="apply-bulk-action"
@@ -208,54 +293,40 @@ const AttendanceDashboard = ({ userRole }) => {
                 </th>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Status</th>
-                <th>Attendance</th>
+                <th>Attendance & Fee Attributes</th>
               </tr>
             </thead>
             <tbody>
               {attendanceData.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center' }}>No students found</td>
+                  <td colSpan="4" style={{ textAlign: 'center' }}>No students found</td>
                 </tr>
               ) : (
                 attendanceData.map(student => (
-                  <tr key={student.id} data-testid={`student-row-${student.id}`}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedStudents.includes(student.id)}
-                        onChange={() => handleCheckboxChange(student.id)}
-                        className={styles.checkbox}
-                        data-testid={`student-checkbox-${student.id}`}
-                      />
-                    </td>
-                    <td>{`${student.firstName || ''} ${student.lastName || ''}`}</td>
-                    <td>{student.email}</td>
-                    <td>{student.enrollmentStatus}</td>
-                    <td>
-                      <select
-                        value={student.attendance?.status || ''}
-                        onChange={(e) => handleStatusChange(student.id, e.target.value)}
-                        className={`${styles['attendance-select']} ${student.attendance?.status ? styles[student.attendance.status] : ''}`}
-                        data-testid={`attendance-select-${student.id}`}
-                      >
-                        <option value="" disabled>-- Select --</option>
-                        <option value="present">Present</option>
-                        <option value="absent">Absent</option>
-                        <option value="late">Late</option>
-                        <option value="excused">Excused</option>
-                      </select>
-                      {student.attendance?.timestamp && (
-                        <span className={styles.timestamp}>
-                          Last updated: {formatTimestamp(student.attendance.timestamp)}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
+                  <StudentAttendanceRow
+                    key={student.id}
+                    student={student}
+                    date={selectedDate}
+                    onStatusChange={handleStatusChange}
+                    onAttributeChange={handleAttributeChange}
+                    onSelect={handleStudentSelect}
+                    isSelected={selectedStudents.includes(student.id)}
+                    recentlyUpdated={recentlyUpdated[student.id]}
+                  />
                 ))
               )}
             </tbody>
           </table>
+          
+          <BulkActionConfirmation
+            isOpen={showConfirmation}
+            onClose={() => setShowConfirmation(false)}
+            onConfirm={applyBulkAction}
+            status={bulkStatus}
+            attributes={{}} // Empty attributes for bulk action
+            studentCount={selectedStudents.length}
+            studentsWithStatus={selectedStudentsWithData}
+          />
         </>
       )}
     </div>

@@ -4,7 +4,19 @@ import userEvent from '@testing-library/user-event';
 import AttendanceDashboard from '../components/AttendanceDashboard';
 
 // Mock Firebase
-jest.mock('firebase/firestore');
+jest.mock('firebase/firestore', () => ({
+  getFirestore: jest.fn(),
+  doc: jest.fn(),
+  onSnapshot: jest.fn((ref, callback) => {
+    // Call the callback once to simulate initial data load
+    callback({
+      exists: () => true,
+      data: () => ({})
+    });
+    return jest.fn(); // Return unsubscribe function mock
+  })
+}));
+
 jest.mock('../lib/firebase/config/config', () => ({
   auth: {},
   default: {}
@@ -16,8 +28,66 @@ jest.mock('../services/AttendanceService', () => {
     attendanceService: {
       getAttendanceSummaryWithStudents: jest.fn(),
       markAttendance: jest.fn(),
-      bulkMarkAttendance: jest.fn()
+      bulkMarkAttendance: jest.fn(),
+      updateAttendanceWithFee: jest.fn(),
+      bulkUpdateAttendanceWithFee: jest.fn(),
+      calculateAttendanceFee: jest.fn()
     }
+  };
+});
+
+// Mock StudentAttendanceRow component
+jest.mock('../components/StudentAttendanceRow', () => {
+  return function MockStudentAttendanceRow(props) {
+    return (
+      <tr data-testid={`student-row-${props.student.id}`}>
+        <td>
+          <input
+            type="checkbox"
+            checked={props.isSelected}
+            onChange={() => props.onSelect(props.student.id)}
+            data-testid={`student-checkbox-${props.student.id}`}
+          />
+        </td>
+        <td>{`${props.student.firstName || ''} ${props.student.lastName || ''}`}</td>
+        <td>{props.student.email}</td>
+        <td>
+          <select
+            value={props.student.attendance?.status || ''}
+            onChange={(e) => props.onStatusChange(props.student.id, e.target.value)}
+            data-testid={`attendance-select-${props.student.id}`}
+          >
+            <option value="">Select</option>
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+            <option value="late">Late</option>
+          </select>
+        </td>
+      </tr>
+    );
+  };
+});
+
+// Mock BulkActionConfirmation component
+jest.mock('../components/BulkActionConfirmation', () => {
+  return function MockBulkActionConfirmation(props) {
+    if (!props.isOpen) return null;
+    return (
+      <div data-testid="confirmation-dialog">
+        <button 
+          data-testid="confirm-button" 
+          onClick={props.onConfirm}
+        >
+          Confirm
+        </button>
+        <button 
+          data-testid="cancel-button" 
+          onClick={props.onClose}
+        >
+          Cancel
+        </button>
+      </div>
+    );
   };
 });
 
@@ -55,6 +125,13 @@ describe('AttendanceDashboard', () => {
     attendanceService.getAttendanceSummaryWithStudents.mockResolvedValue(mockStudentsWithAttendance);
     attendanceService.markAttendance.mockResolvedValue();
     attendanceService.bulkMarkAttendance.mockResolvedValue();
+    attendanceService.updateAttendanceWithFee.mockResolvedValue();
+    attendanceService.bulkUpdateAttendanceWithFee.mockResolvedValue();
+    attendanceService.calculateAttendanceFee.mockImplementation((status, attributes) => {
+      if (status === 'absent') return 5;
+      if (status === 'late') return 1 + (attributes.noShoes ? 1 : 0) + (attributes.notInUniform ? 1 : 0);
+      return (attributes.noShoes ? 1 : 0) + (attributes.notInUniform ? 1 : 0);
+    });
   });
 
   it('should render the attendance dashboard correctly', async () => {
@@ -140,12 +217,13 @@ describe('AttendanceDashboard', () => {
     // Change attendance status
     await user.selectOptions(statusSelect, 'absent');
     
-    // Verify the attendance service was called to update the status
+    // Verify the attendance service was called to update the status with fee
     await waitFor(() => {
-      expect(attendanceService.markAttendance).toHaveBeenCalledWith(
+      expect(attendanceService.updateAttendanceWithFee).toHaveBeenCalledWith(
         expect.any(Date),
         'student1',
-        'absent'
+        'absent',
+        {}
       );
     });
   });
@@ -181,16 +259,21 @@ describe('AttendanceDashboard', () => {
     const bulkStatusSelect = screen.getByTestId('bulk-status-select');
     await user.selectOptions(bulkStatusSelect, 'present');
     
-    // Apply bulk action
+    // Open confirmation dialog
     const applyButton = screen.getByTestId('apply-bulk-action');
     await user.click(applyButton);
     
-    // Verify the bulk mark attendance was called
+    // Confirm bulk action in the dialog
+    const confirmButton = screen.getByTestId('confirm-button');
+    await user.click(confirmButton);
+    
+    // Verify the bulk mark attendance with fee was called
     await waitFor(() => {
-      expect(attendanceService.bulkMarkAttendance).toHaveBeenCalledWith(
+      expect(attendanceService.bulkUpdateAttendanceWithFee).toHaveBeenCalledWith(
         expect.any(Date),
         ['student1', 'student2'],
-        'present'
+        'present',
+        {}
       );
     });
   });

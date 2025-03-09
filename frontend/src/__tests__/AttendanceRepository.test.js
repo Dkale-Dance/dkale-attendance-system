@@ -100,7 +100,8 @@ describe('AttendanceRepository', () => {
         {
           [studentId]: { 
             status,
-            timestamp: undefined // In the test, Timestamp.fromDate returns undefined due to our mock
+            timestamp: undefined, // In the test, Timestamp.fromDate returns undefined due to our mock
+            attributes: {}
           }
         },
         { merge: true }
@@ -115,12 +116,88 @@ describe('AttendanceRepository', () => {
       const studentIds = ['student1', 'student2'];
       const status = 'present';
       const expectedUpdateData = {
-        student1: { status, timestamp: undefined }, // In the test, Timestamp.fromDate returns undefined
-        student2: { status, timestamp: undefined },
+        student1: { 
+          status, 
+          timestamp: undefined, // In the test, Timestamp.fromDate returns undefined
+          attributes: {}
+        },
+        student2: { 
+          status, 
+          timestamp: undefined,
+          attributes: {}
+        },
       };
       
       // Exercise
       await attendanceRepository.bulkUpdateAttendance(date, studentIds, status);
+      
+      // Verify
+      expect(doc).toHaveBeenCalledWith(
+        mockDb, 
+        'attendance', 
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      );
+      expect(setDoc).toHaveBeenCalledWith(
+        mockDocRef,
+        expectedUpdateData,
+        { merge: true }
+      );
+    });
+  });
+  
+  describe('updateAttendanceWithAttributes', () => {
+    it('should update attendance with specific attributes', async () => {
+      // Setup
+      const date = mockDate;
+      const studentId = 'student1';
+      const status = 'present';
+      const attributes = { noShoes: true, notInUniform: true };
+      
+      // Exercise
+      await attendanceRepository.updateAttendanceWithAttributes(date, studentId, status, attributes);
+      
+      // Verify
+      expect(doc).toHaveBeenCalledWith(
+        mockDb, 
+        'attendance', 
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      );
+      expect(setDoc).toHaveBeenCalledWith(
+        mockDocRef,
+        {
+          [studentId]: { 
+            status,
+            timestamp: undefined, // In the test, Timestamp.fromDate returns undefined due to our mock
+            attributes
+          }
+        },
+        { merge: true }
+      );
+    });
+  });
+  
+  describe('bulkUpdateAttendanceWithAttributes', () => {
+    it('should update attendance with attributes for multiple students', async () => {
+      // Setup
+      const date = mockDate;
+      const studentIds = ['student1', 'student2'];
+      const status = 'late';
+      const attributes = { noShoes: true };
+      const expectedUpdateData = {
+        student1: { 
+          status, 
+          timestamp: undefined,
+          attributes
+        },
+        student2: { 
+          status, 
+          timestamp: undefined,
+          attributes
+        },
+      };
+      
+      // Exercise
+      await attendanceRepository.bulkUpdateAttendanceWithAttributes(date, studentIds, status, attributes);
       
       // Verify
       expect(doc).toHaveBeenCalledWith(

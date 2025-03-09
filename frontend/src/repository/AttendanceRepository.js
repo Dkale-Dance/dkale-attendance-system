@@ -48,7 +48,7 @@ export class AttendanceRepository {
    * Updates attendance for a specific student on a given date
    * @param {Date} date - The date of attendance
    * @param {string} studentId - The student's ID
-   * @param {string} status - Attendance status ('present', 'absent', 'late', 'excused')
+   * @param {string} status - Attendance status ('present', 'absent', 'late', 'medicalAbsence', 'holiday')
    * @returns {Promise<void>}
    */
   async updateAttendance(date, studentId, status) {
@@ -60,7 +60,8 @@ export class AttendanceRepository {
       const updateData = {
         [studentId]: {
           status,
-          timestamp: Timestamp.fromDate(new Date())
+          timestamp: Timestamp.fromDate(new Date()),
+          attributes: {} // Default empty attributes
         }
       };
       
@@ -76,7 +77,7 @@ export class AttendanceRepository {
    * Updates attendance for multiple students on a given date
    * @param {Date} date - The date of attendance
    * @param {string[]} studentIds - Array of student IDs
-   * @param {string} status - Attendance status ('present', 'absent', 'late', 'excused')
+   * @param {string} status - Attendance status ('present', 'absent', 'late', 'medicalAbsence', 'holiday')
    * @returns {Promise<void>}
    */
   async bulkUpdateAttendance(date, studentIds, status) {
@@ -89,7 +90,8 @@ export class AttendanceRepository {
       const updateData = studentIds.reduce((acc, studentId) => {
         acc[studentId] = {
           status,
-          timestamp: Timestamp.fromDate(now)
+          timestamp: Timestamp.fromDate(now),
+          attributes: {} // Default empty attributes
         };
         return acc;
       }, {});
@@ -99,6 +101,68 @@ export class AttendanceRepository {
     } catch (error) {
       console.error("Error bulk updating attendance:", error);
       throw new Error(`Failed to bulk update attendance: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Updates attendance with specific attributes for a student
+   * @param {Date} date - The date of attendance
+   * @param {string} studentId - The student's ID
+   * @param {string} status - Attendance status ('present', 'absent', 'late', 'medicalAbsence', 'holiday')
+   * @param {Object} attributes - Attributes like { noShoes: true, notInUniform: true }
+   * @returns {Promise<void>}
+   */
+  async updateAttendanceWithAttributes(date, studentId, status, attributes) {
+    try {
+      const dateStr = this.formatDateForDocId(date);
+      const attendanceRef = doc(this.db, this.collectionName, dateStr);
+      
+      // Create update data with attributes
+      const updateData = {
+        [studentId]: {
+          status,
+          timestamp: Timestamp.fromDate(new Date()),
+          attributes
+        }
+      };
+      
+      // Use setDoc with merge option
+      await setDoc(attendanceRef, updateData, { merge: true });
+    } catch (error) {
+      console.error("Error updating attendance with attributes:", error);
+      throw new Error(`Failed to update attendance with attributes: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Updates attendance with attributes for multiple students
+   * @param {Date} date - The date of attendance
+   * @param {string[]} studentIds - Array of student IDs
+   * @param {string} status - Attendance status ('present', 'absent', 'late', 'medicalAbsence', 'holiday')
+   * @param {Object} attributes - Attributes like { noShoes: true, notInUniform: true }
+   * @returns {Promise<void>}
+   */
+  async bulkUpdateAttendanceWithAttributes(date, studentIds, status, attributes) {
+    try {
+      const dateStr = this.formatDateForDocId(date);
+      const attendanceRef = doc(this.db, this.collectionName, dateStr);
+      
+      // Create update data for all students with attributes
+      const now = new Date();
+      const updateData = studentIds.reduce((acc, studentId) => {
+        acc[studentId] = {
+          status,
+          timestamp: Timestamp.fromDate(now),
+          attributes
+        };
+        return acc;
+      }, {});
+      
+      // Use setDoc with merge option
+      await setDoc(attendanceRef, updateData, { merge: true });
+    } catch (error) {
+      console.error("Error bulk updating attendance with attributes:", error);
+      throw new Error(`Failed to bulk update attendance with attributes: ${error.message}`);
     }
   }
 }

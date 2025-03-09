@@ -1,10 +1,12 @@
 import { attendanceRepository } from "../repository/AttendanceRepository";
 import { studentRepository } from "../repository/StudentRepository";
+import { studentService } from "../services/StudentService";
 
 export default class AttendanceService {
-  constructor(attendanceRepository, studentRepository) {
+  constructor(attendanceRepository, studentRepository, studentServiceInstance = studentService) {
     this.attendanceRepository = attendanceRepository;
     this.studentRepository = studentRepository;
+    this.studentService = studentServiceInstance;
   }
 
   /**
@@ -22,17 +24,66 @@ export default class AttendanceService {
    * @throws {Error} If status is invalid
    */
   validateStatus(status) {
-    const validStatuses = ['present', 'absent', 'late', 'excused'];
+    const validStatuses = ['present', 'absent', 'medicalAbsence', 'holiday'];
     if (!validStatuses.includes(status)) {
       throw new Error(`Invalid attendance status. Must be one of: ${validStatuses.join(', ')}`);
     }
   }
 
   /**
+   * Validate that attributes can be applied to the given status
+   * @param {string} status - The attendance status
+   * @param {Object} attributes - The attributes to validate
+   * 
+   * Since attributes are now independent of status, we don't need to validate them against the status.
+   * All statuses can have attributes.
+   */
+  validateAttributes(status, attributes) {
+    // All statuses can now have attributes
+    // No validation needed
+  }
+
+  /**
+   * Calculate the fee for attendance status and attributes
+   * @param {string} status - Attendance status (present, absent, medicalAbsence, holiday)
+   * @param {Object} attributes - Fee attributes (late, noShoes, notInUniform)
+   * @returns {number} Fee amount in dollars
+   */
+  calculateAttendanceFee(status, attributes) {
+    // For Absent, fixed $5 fee regardless of attributes
+    if (status === 'absent') {
+      return 5;
+    }
+    
+    // For Medical Absence or Holiday, no fees regardless of attributes
+    if (status === 'medicalAbsence' || status === 'holiday') {
+      return 0;
+    }
+    
+    // For Present status, accumulate fees from attributes
+    let fee = 0;
+    
+    // Add fee for each attribute
+    if (attributes.late) {
+      fee += 1;
+    }
+    
+    if (attributes.noShoes) {
+      fee += 1;
+    }
+    
+    if (attributes.notInUniform) {
+      fee += 1;
+    }
+    
+    return fee;
+  }
+
+  /**
    * Mark attendance for a single student
    * @param {Date} date - The date of attendance
    * @param {string} studentId - The student's ID
-   * @param {string} status - Attendance status ('present', 'absent', 'late', 'excused')
+   * @param {string} status - Attendance status
    * @returns {Promise<void>}
    */
   async markAttendance(date, studentId, status) {
@@ -41,10 +92,26 @@ export default class AttendanceService {
   }
 
   /**
+   * Mark attendance with specific attributes for a student
+   * @param {Date} date - The date of attendance
+   * @param {string} studentId - The student's ID
+   * @param {string} status - Attendance status
+   * @param {Object} attributes - Attributes like { noShoes: true, notInUniform: true }
+   * @returns {Promise<void>}
+   */
+  async markAttendanceWithAttributes(date, studentId, status, attributes) {
+    this.validateStatus(status);
+    this.validateAttributes(status, attributes);
+    
+    // All statuses can have attributes now
+    return this.attendanceRepository.updateAttendanceWithAttributes(date, studentId, status, attributes);
+  }
+
+  /**
    * Mark attendance for multiple students
    * @param {Date} date - The date of attendance
    * @param {string[]} studentIds - Array of student IDs
-   * @param {string} status - Attendance status ('present', 'absent', 'late', 'excused')
+   * @param {string} status - Attendance status
    * @returns {Promise<void>}
    */
   async bulkMarkAttendance(date, studentIds, status) {
@@ -55,6 +122,78 @@ export default class AttendanceService {
     }
     
     return this.attendanceRepository.bulkUpdateAttendance(date, studentIds, status);
+  }
+
+  /**
+   * Mark attendance with attributes for multiple students
+   * @param {Date} date - The date of attendance
+   * @param {string[]} studentIds - Array of student IDs
+   * @param {string} status - Attendance status
+   * @param {Object} attributes - Attributes like { noShoes: true, notInUniform: true }
+   * @returns {Promise<void>}
+   */
+  async bulkMarkAttendanceWithAttributes(date, studentIds, status, attributes) {
+    this.validateStatus(status);
+    this.validateAttributes(status, attributes);
+    
+    if (!studentIds || studentIds.length === 0) {
+      throw new Error('No students selected');
+    }
+    
+    // All statuses can have attributes now
+    return this.attendanceRepository.bulkUpdateAttendanceWithAttributes(date, studentIds, status, attributes);
+  }
+
+  /**
+   * Update attendance and apply fee to student balance in a single operation
+   * @param {Date} date - The date of attendance
+   * @param {string} studentId - The student's ID
+   * @param {string} status - Attendance status
+   * @param {Object} attributes - Attendance attributes
+   * @returns {Promise<void>}
+   */
+  async updateAttendanceWithFee(date, studentId, status, attributes) {
+    this.validateStatus(status);
+    
+    // Calculate fee - all statuses can have attributes now
+    const fee = this.calculateAttendanceFee(status, attributes);
+    
+    // Update attendance record
+    await this.attendanceRepository.updateAttendanceWithAttributes(date, studentId, status, attributes);
+    
+    // Apply fee to student balance if applicable
+    if (fee > 0) {
+      await this.studentService.addBalance(studentId, fee);
+    }
+  }
+
+  /**
+   * Update attendance with fee for multiple students
+   * @param {Date} date - The date of attendance
+   * @param {string[]} studentIds - Array of student IDs
+   * @param {string} status - Attendance status
+   * @param {Object} attributes - Attendance attributes
+   * @returns {Promise<void>}
+   */
+  async bulkUpdateAttendanceWithFee(date, studentIds, status, attributes) {
+    this.validateStatus(status);
+    
+    if (!studentIds || studentIds.length === 0) {
+      throw new Error('No students selected');
+    }
+    
+    // Calculate fee - all statuses can have attributes now
+    const fee = this.calculateAttendanceFee(status, attributes);
+    
+    // Update attendance records
+    await this.attendanceRepository.bulkUpdateAttendanceWithAttributes(date, studentIds, status, attributes);
+    
+    // Apply fee to each student balance if applicable
+    if (fee > 0) {
+      for (const studentId of studentIds) {
+        await this.studentService.addBalance(studentId, fee);
+      }
+    }
   }
 
   /**
@@ -103,4 +242,4 @@ export default class AttendanceService {
 }
 
 // Export a default instance
-export const attendanceService = new AttendanceService(attendanceRepository, studentRepository);
+export const attendanceService = new AttendanceService(attendanceRepository, studentRepository, studentService);
