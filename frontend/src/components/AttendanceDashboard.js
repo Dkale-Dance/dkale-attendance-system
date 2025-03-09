@@ -110,7 +110,7 @@ const AttendanceDashboard = ({ userRole }) => {
         newUnsubscribe();
       }
     };
-  }, [selectedDate, userRole]);
+  }, [selectedDate, userRole, unsubscribe]);
   
   // Load data when the component mounts or when the selected date changes
   useEffect(() => {
