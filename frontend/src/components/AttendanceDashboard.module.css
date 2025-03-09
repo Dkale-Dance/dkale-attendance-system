@@ -1,0 +1,405 @@
+.attendance-dashboard {
+  padding: 20px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.date-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-picker {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.unauthorized {
+  color: #d32f2f;
+  text-align: center;
+  padding: 40px 0;
+  font-weight: bold;
+}
+
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  border: 1px solid #ddd;
+}
+
+.attendance-table th,
+.attendance-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.attendance-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.attendance-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.attendance-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.attendance-select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.attendance-select.present {
+  background-color: #e8f5e9;
+}
+
+.attendance-select.absent {
+  background-color: #ffebee;
+}
+
+.attendance-select.late {
+  background-color: #fff8e1;
+}
+
+.attendance-select.medicalAbsence {
+  background-color: #e3f2fd;
+}
+
+.attendance-select.holiday {
+  background-color: #f3e5f5;
+}
+
+.bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.bulk-status-select {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  min-width: 150px;
+}
+
+.bulk-attributes {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.attendance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.attribute-header {
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.attribute-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fee-note {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+.apply-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background-color: #2196f3;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.apply-button:hover {
+  background-color: #1976d2;
+}
+
+.apply-button:disabled {
+  background-color: #bdbdbd;
+  cursor: not-allowed;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #757575;
+  display: block;
+  margin-top: 4px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 18px;
+  color: #2196f3;
+}
+
+.attributes-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.attribute-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.attribute-checkbox.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attribute-checkbox.disabled input {
+  cursor: not-allowed;
+}
+
+.attribute-checkbox label {
+  user-select: none;
+}
+
+.fee-display {
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.fee-display.free {
+  color: #2e7d32;
+}
+
+.fee-display.low {
+  color: #f57c00;
+}
+
+.fee-display.high {
+  color: #d32f2f;
+}
+
+/* Student row with expanded attributes styling */
+.student-row {
+  position: relative;
+}
+
+.student-attributes {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #ddd;
+}
+
+.realtime-indicator {
+  position: relative;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: #4caf50;
+  border-radius: 50%;
+  margin-left: 5px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+.confirmation-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.confirmation-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.confirmation-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.confirmation-summary {
+  margin: 15px 0;
+}
+
+.confirmation-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.confirm-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background-color: #2196f3;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.cancel-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+}
+
+.fee-impact {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.fee-impact.high {
+  background-color: #ffebee;
+}
+
+.fee-breakdown {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .attendance-table th,
+  .attendance-table td {
+    padding: 8px 5px;
+    font-size: 14px;
+  }
+  
+  .bulk-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .bulk-attributes {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .attribute-container {
+    width: 100%;
+  }
+  
+  .attendance-select {
+    font-size: 14px;
+    padding: 6px;
+  }
+  
+  .student-row-expandable {
+    cursor: pointer;
+  }
+  
+  .expanded-row-content {
+    padding: 10px;
+    background-color: #f9f9f9;
+  }
+}
+
+/* Update status styles based on the fee amount */
+.status-fee-indicator {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.status-fee-indicator.fee-0 {
+  background-color: #4caf50;
+}
+
+.status-fee-indicator.fee-1 {
+  background-color: #ff9800;
+}
+
+.status-fee-indicator.fee-2 {
+  background-color: #f44336;
+}
+
+.status-fee-indicator.fee-3 {
+  background-color: #d32f2f;
+}
+
+.status-fee-indicator.fee-5 {
+  background-color: #b71c1c;
+}

@@ -29,6 +29,22 @@ jest.mock('../services/StudentService', () => ({
   }
 }));
 
+// Mock the AttendanceService
+jest.mock('../services/AttendanceService', () => ({
+  attendanceService: {
+    getAttendanceSummaryWithStudents: jest.fn(),
+    markAttendance: jest.fn(),
+    bulkMarkAttendance: jest.fn()
+  }
+}));
+
+// Mock Firebase Firestore
+jest.mock('firebase/firestore');
+jest.mock('../lib/firebase/config/config', () => ({
+  auth: {},
+  default: {}
+}));
+
 // Mock Firebase functions
 jest.mock('firebase/auth', () => ({
   setPersistence: jest.fn(),

@@ -50,6 +50,14 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
         onClick={() => setView('management')} 
       />
     );
+    
+    links.push(
+      <NavLink 
+        key="attendance" 
+        label="Attendance" 
+        onClick={() => setView('attendance')} 
+      />
+    );
   }
 
   return (
