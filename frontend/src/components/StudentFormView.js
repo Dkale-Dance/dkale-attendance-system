@@ -9,6 +9,7 @@ import { paymentService } from '../services/PaymentService';
 import styles from './StudentFormView.module.css';
 
 // This component is solely responsible for managing the add/edit student form
+// It also shows payment history using the paymentService for existing students
 const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

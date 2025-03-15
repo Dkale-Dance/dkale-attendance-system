@@ -6,7 +6,7 @@ import ErrorMessage from './ErrorMessage';
 import styles from './StudentManagement.module.css'; // Reusing the existing management styles
 
 const PaymentDashboard = ({ userRole }) => {
-  const [error, setError] = useState('');
+  const [error] = useState('');
   const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' or 'form'
   const [refreshKey, setRefreshKey] = useState(0); // For forcing re-render of payment list
 

@@ -25,13 +25,13 @@ export class PaymentRepository {
       const paymentId = uuidv4();
       const paymentRef = doc(this.db, this.collectionName, paymentId);
       
-      // Ensure date is a Timestamp
+      // Ensure date is properly stored (using Firestore Timestamp)
       const payment = {
         ...paymentData,
         date: paymentData.date instanceof Date 
-          ? paymentData.date 
-          : new Date(paymentData.date),
-        createdAt: new Date()
+          ? Timestamp.fromDate(paymentData.date) 
+          : Timestamp.fromDate(new Date(paymentData.date)),
+        createdAt: Timestamp.fromDate(new Date())
       };
       
       // Save the payment record
