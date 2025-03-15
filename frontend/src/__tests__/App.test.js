@@ -6,6 +6,19 @@ import App from '../App';
 import { authService } from '../services/AuthService';
 import { studentService } from '../services/StudentService';
 
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+  BrowserRouter: ({ children }) => <div>{children}</div>,
+  Routes: ({ children }) => <div>{children}</div>,
+  Route: ({ path, element }) => <div>{element}</div>,
+  Link: ({ children, to, className, onClick }) => (
+    <a href={to} className={className} onClick={onClick}>
+      {children}
+    </a>
+  ),
+  useNavigate: () => jest.fn()
+}));
+
 // Mock the auth service
 jest.mock('../services/AuthService', () => {
   // Create a mock implementation for onAuthStateChanged that can be customized per test

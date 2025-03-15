@@ -2,6 +2,16 @@ import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import Navbar from '../components/Navbar';
 
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+  Link: ({ children, to, className, onClick }) => (
+    <a href={to} className={className} onClick={onClick}>
+      {children}
+    </a>
+  ),
+  useNavigate: () => jest.fn()
+}));
+
 describe('Navbar Component', () => {
   const mockUser = {
     email: 'test@example.com',
