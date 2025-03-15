@@ -1,5 +1,5 @@
 .form-view {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 30px;
   background-color: #282c34;
@@ -21,7 +21,8 @@
   margin-top: 20px;
 }
 
-.cancel-button {
+.cancel-button,
+.back-button {
   background-color: transparent;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.5);
@@ -32,9 +33,39 @@
   transition: all 0.2s ease;
 }
 
-.cancel-button:hover {
+.cancel-button:hover,
+.back-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
   border-color: white;
+}
+
+/* Tabs styling */
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tabs button {
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: none;
+  padding: 10px 20px;
+  margin: 0 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tabs button:hover {
+  color: white;
+}
+
+.tabs button.active-tab {
+  color: white;
+  border-bottom: 3px solid #61dafb;
 }
 
 @media (max-width: 768px) {
@@ -45,6 +76,11 @@
   
   .form-view h2 {
     font-size: 1.5rem;
+  }
+  
+  .tabs button {
+    padding: 8px 15px;
+    font-size: 0.9rem;
   }
 }
 
@@ -58,8 +94,19 @@
     gap: 10px;
   }
   
-  .cancel-button {
+  .cancel-button,
+  .back-button {
     width: 100%;
     padding: 8px 15px;
+  }
+  
+  .tabs {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .tabs button {
+    width: 100%;
+    margin: 5px 0;
   }
 }

@@ -5,6 +5,7 @@ import LoginForm from "./components/LoginForm";
 import StudentManagement from "./components/StudentManagement";
 import StudentForm from "./components/StudentForm";
 import AttendanceDashboard from "./components/AttendanceDashboard";
+import PaymentDashboard from "./components/PaymentDashboard";
 import ErrorMessage from "./components/ErrorMessage";
 import Navbar from "./components/Navbar";
 import logo from "./assets/logo.png";
@@ -175,6 +176,11 @@ function App() {
     // Attendance dashboard view (for admins)
     if (view === "attendance" && userRole === "admin") {
       return <AttendanceDashboard userRole={userRole} />;
+    }
+    
+    // Payment dashboard view (for admins)
+    if (view === "payments" && userRole === "admin") {
+      return <PaymentDashboard userRole={userRole} />;
     }
 
     // Default welcome view

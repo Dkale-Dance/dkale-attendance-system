@@ -1,15 +1,18 @@
-// StudentFormView.js - FINAL FIX
+// StudentFormView.js
 import React, { useState } from 'react';
 import StudentForm from './StudentForm';
+import PaymentList from './PaymentList';
 import ErrorMessage from './ErrorMessage';
 import { studentService } from '../services/StudentService';
 import { authService } from '../services/AuthService';
+import { paymentService } from '../services/PaymentService';
 import styles from './StudentFormView.module.css';
 
 // This component is solely responsible for managing the add/edit student form
 const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('details'); // 'details', 'payments'
 
   const handleSubmitForm = async (formData) => {
     setError('');
@@ -53,24 +56,60 @@ const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
       
       {error && <ErrorMessage message={error} />}
       
-      <StudentForm 
-        student={selectedStudent}
-        onSubmit={handleSubmitForm} 
-        buttonText={selectedStudent ? "Update Student" : "Add Student"}
-        isAdminView={true}
-        disabled={loading}
-      />
+      {selectedStudent && (
+        <div className={styles['tabs']}>
+          <button 
+            className={activeTab === 'details' ? styles['active-tab'] : ''}
+            onClick={() => setActiveTab('details')}
+            data-testid="details-tab"
+          >
+            Student Details
+          </button>
+          <button 
+            className={activeTab === 'payments' ? styles['active-tab'] : ''}
+            onClick={() => setActiveTab('payments')}
+            data-testid="payments-tab"
+          >
+            Payment History
+          </button>
+        </div>
+      )}
       
-      <div className={styles.buttons}>
-        <button 
-          onClick={onCancel}
-          data-testid="cancel-button"
-          className={styles['cancel-button']}
-          disabled={loading}
-        >
-          Cancel
-        </button>
-      </div>
+      {activeTab === 'details' ? (
+        <>
+          <StudentForm 
+            student={selectedStudent}
+            onSubmit={handleSubmitForm} 
+            buttonText={selectedStudent ? "Update Student" : "Add Student"}
+            isAdminView={true}
+            disabled={loading}
+          />
+          
+          <div className={styles.buttons}>
+            <button 
+              onClick={onCancel}
+              data-testid="cancel-button"
+              className={styles['cancel-button']}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <PaymentList studentId={selectedStudent.id} />
+          
+          <div className={styles.buttons}>
+            <button 
+              onClick={() => setActiveTab('details')}
+              className={styles['back-button']}
+            >
+              Back to Details
+            </button>
+          </div>
+        </>
+      )}
       
       {loading && <div className="loading">Processing...</div>}
     </div>
