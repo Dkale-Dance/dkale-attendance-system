@@ -25,7 +25,8 @@ const AttendanceDashboard = ({ userRole }) => {
   // We no longer need bulk attributes as per the new design
   const [recentlyUpdated, setRecentlyUpdated] = useState({});
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [unsubscribe, setUnsubscribe] = useState(null);
+  // Instead of tracking an unsubscribe function in state, we'll use a ref
+  const unsubscribeRef = React.useRef(null);
   
   // Function to fetch attendance data for the selected date
   const fetchAttendanceData = useCallback(async (date) => {
@@ -48,8 +49,9 @@ const AttendanceDashboard = ({ userRole }) => {
     if (userRole !== 'admin') return;
     
     // Clean up previous listener if it exists
-    if (unsubscribe) {
-      unsubscribe();
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
     }
     
     const dateStr = formatDateForInput(selectedDate);
@@ -102,12 +104,14 @@ const AttendanceDashboard = ({ userRole }) => {
       }
     );
     
-    setUnsubscribe(() => newUnsubscribe);
+    // Store the unsubscribe function in our ref instead of state
+    unsubscribeRef.current = newUnsubscribe;
     
     // Cleanup on unmount or when date changes
     return () => {
-      if (newUnsubscribe) {
-        newUnsubscribe();
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
       }
     };
   }, [selectedDate, userRole]); // Removed unsubscribe from dependencies

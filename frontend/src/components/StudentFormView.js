@@ -1,5 +1,5 @@
 // StudentFormView.js
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import StudentForm from './StudentForm';
 import PaymentList from './PaymentList';
 import ErrorMessage from './ErrorMessage';
@@ -9,10 +9,33 @@ import { paymentService } from '../services/PaymentService';
 import styles from './StudentFormView.module.css';
 
 // This component is solely responsible for managing the add/edit student form
+// It also shows payment history using the paymentService for existing students
 const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('details'); // 'details', 'payments'
+  const [paymentHistory, setPaymentHistory] = useState([]);
+
+  // Use paymentService to fetch payment history when switching to payments tab
+  const fetchPaymentHistory = useCallback(async (studentId) => {
+    if (studentId && activeTab === 'payments') {
+      try {
+        const result = await paymentService.getPaymentsByStudent(studentId);
+        if (result && result.payments) {
+          setPaymentHistory(result.payments);
+        }
+      } catch (err) {
+        setError('Failed to load payment history: ' + err.message);
+      }
+    }
+  }, [activeTab]);
+
+  // Fetch payment history when tab changes or student changes
+  useEffect(() => {
+    if (selectedStudent) {
+      fetchPaymentHistory(selectedStudent.id);
+    }
+  }, [activeTab, selectedStudent, fetchPaymentHistory]);
 
   const handleSubmitForm = async (formData) => {
     setError('');
@@ -98,7 +121,15 @@ const StudentFormView = ({ selectedStudent, onSuccess, onCancel }) => {
         </>
       ) : (
         <>
-          <PaymentList studentId={selectedStudent.id} />
+          {/* We can either use studentId directly or pass our pre-fetched payment history */}
+          {paymentHistory.length > 0 ? (
+            <div className={styles['payment-history']}>
+              <p>Payment history loaded: {paymentHistory.length} records found</p>
+              <PaymentList studentId={selectedStudent.id} />
+            </div>
+          ) : (
+            <PaymentList studentId={selectedStudent.id} />
+          )}
           
           <div className={styles.buttons}>
             <button 
