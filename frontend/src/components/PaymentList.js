@@ -16,8 +16,25 @@ const PaymentList = ({ studentId }) => {
 
   // Function to format date for display
   const formatDate = (dateObj) => {
-    if (!dateObj) return '';
-    const date = dateObj instanceof Date ? dateObj : new Date(dateObj);
+    if (!dateObj) return 'No date';
+    
+    let date;
+    // Handle Firestore timestamp objects
+    if (dateObj && typeof dateObj.toDate === 'function') {
+      date = dateObj.toDate();
+    } else if (dateObj instanceof Date) {
+      date = dateObj;
+    } else {
+      // Try to convert strings or timestamps to Date objects
+      date = new Date(dateObj);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date encountered:', dateObj);
+      return 'Invalid date';
+    }
+    
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',

@@ -28,7 +28,15 @@ export default class PaymentService {
       throw new Error(`Invalid payment method. Must be one of: ${validMethods.join(", ")}`);
     }
 
-    // Additional validations can be added here
+    // Validate date
+    if (paymentData.date) {
+      const paymentDate = new Date(paymentData.date);
+      if (isNaN(paymentDate.getTime())) {
+        throw new Error("Invalid payment date");
+      }
+    } else {
+      throw new Error("Payment date is required");
+    }
   }
 
   /**
@@ -91,12 +99,34 @@ export default class PaymentService {
   }
 
   /**
-   * Gets all payments
-   * @returns {Promise<Array>} Array of all payment records
+   * Gets all payments with student names
+   * @returns {Promise<Array>} Array of all payment records with student names
    */
   async getAllPayments() {
     try {
-      return this.paymentRepository.getAllPayments();
+      // Get all payments
+      const payments = await this.paymentRepository.getAllPayments();
+      
+      // Get all students to join with payments
+      const students = await this.studentRepository.getAllStudents();
+      
+      // Create a lookup for quick access
+      const studentLookup = students.reduce((lookup, student) => {
+        lookup[student.id] = student;
+        return lookup;
+      }, {});
+      
+      // Add student names to payments
+      return payments.map(payment => {
+        const student = studentLookup[payment.studentId];
+        if (student) {
+          return {
+            ...payment,
+            studentName: `${student.firstName} ${student.lastName}`
+          };
+        }
+        return payment;
+      });
     } catch (error) {
       console.error("Error fetching all payments:", error);
       throw error;
@@ -104,14 +134,44 @@ export default class PaymentService {
   }
 
   /**
-   * Gets payments within a specific date range
+   * Gets payments within a specific date range with student names
    * @param {Date} startDate - Start date for the range
    * @param {Date} endDate - End date for the range
-   * @returns {Promise<Array>} Array of payment records within the date range
+   * @returns {Promise<Array>} Array of payment records within the date range with student names
    */
   async getPaymentsByDateRange(startDate, endDate) {
     try {
-      return this.paymentRepository.getPaymentsByDateRange(startDate, endDate);
+      // Validate dates
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new Error("Invalid date range");
+      }
+      
+      // Get payments in range
+      const payments = await this.paymentRepository.getPaymentsByDateRange(start, end);
+      
+      // Get all students to join with payments
+      const students = await this.studentRepository.getAllStudents();
+      
+      // Create a lookup for quick access
+      const studentLookup = students.reduce((lookup, student) => {
+        lookup[student.id] = student;
+        return lookup;
+      }, {});
+      
+      // Add student names to payments
+      return payments.map(payment => {
+        const student = studentLookup[payment.studentId];
+        if (student) {
+          return {
+            ...payment,
+            studentName: `${student.firstName} ${student.lastName}`
+          };
+        }
+        return payment;
+      });
     } catch (error) {
       console.error("Error fetching payments by date range:", error);
       throw error;

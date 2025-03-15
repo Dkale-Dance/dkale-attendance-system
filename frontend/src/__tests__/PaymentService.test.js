@@ -187,39 +187,75 @@ describe("PaymentService", () => {
     expect(result.student).toEqual(mockStudentData);
   });
 
-  test("should get all payments", async () => {
+  test("should get all payments with student names", async () => {
     // Arrange
     const mockPayments = [
       { ...mockPaymentData, id: "payment1" },
       { ...mockPaymentData, id: "payment2", amount: 150, studentId: "student456" }
     ];
     
+    const mockStudents = [
+      { id: "student123", firstName: "John", lastName: "Doe" },
+      { id: "student456", firstName: "Jane", lastName: "Smith" }
+    ];
+    
     mockPaymentRepository.getAllPayments.mockResolvedValue(mockPayments);
+    mockStudentRepository.getAllStudents = jest.fn().mockResolvedValue(mockStudents);
 
     // Act
     const result = await paymentService.getAllPayments();
 
     // Assert
     expect(mockPaymentRepository.getAllPayments).toHaveBeenCalled();
-    expect(result).toEqual(mockPayments);
+    expect(mockStudentRepository.getAllStudents).toHaveBeenCalled();
+    expect(result[0].studentName).toBe("John Doe");
+    expect(result[1].studentName).toBe("Jane Smith");
   });
 
-  test("should get payments by date range", async () => {
+  test("should get payments by date range with student names", async () => {
     // Arrange
     const startDate = new Date("2023-01-01");
     const endDate = new Date("2023-01-31");
     const mockPayments = [
       { ...mockPaymentData, id: "payment1", date: new Date("2023-01-15") },
-      { ...mockPaymentData, id: "payment2", amount: 150, date: new Date("2023-01-20") }
+      { ...mockPaymentData, id: "payment2", amount: 150, studentId: "student456", date: new Date("2023-01-20") }
+    ];
+    
+    const mockStudents = [
+      { id: "student123", firstName: "John", lastName: "Doe" },
+      { id: "student456", firstName: "Jane", lastName: "Smith" }
     ];
     
     mockPaymentRepository.getPaymentsByDateRange.mockResolvedValue(mockPayments);
+    mockStudentRepository.getAllStudents = jest.fn().mockResolvedValue(mockStudents);
 
     // Act
     const result = await paymentService.getPaymentsByDateRange(startDate, endDate);
 
     // Assert
     expect(mockPaymentRepository.getPaymentsByDateRange).toHaveBeenCalledWith(startDate, endDate);
-    expect(result).toEqual(mockPayments);
+    expect(mockStudentRepository.getAllStudents).toHaveBeenCalled();
+    expect(result[0].studentName).toBe("John Doe");
+    expect(result[1].studentName).toBe("Jane Smith");
+  });
+
+  test("should validate payment date", async () => {
+    // Arrange
+    const paymentDataWithInvalidDate = {
+      studentId: "student123",
+      amount: 100,
+      date: "invalid-date", // Invalid date format
+      paymentMethod: "cash",
+      notes: "Monthly fee",
+      adminId: "admin123"
+    };
+
+    // Act & Assert
+    await expect(paymentService.recordPayment(paymentDataWithInvalidDate))
+      .rejects
+      .toThrow("Invalid payment date");
+    
+    expect(mockPaymentRepository.createPayment).not.toHaveBeenCalled();
+    expect(mockStudentRepository.updateStudent).not.toHaveBeenCalled();
   });
 });

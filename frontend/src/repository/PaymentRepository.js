@@ -88,10 +88,25 @@ export class PaymentRepository {
       
       const querySnapshot = await getDocs(q);
       
-      return querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Ensure date is a proper Date object
+        let date = data.date;
+        if (date && typeof date.toDate === 'function') {
+          // Handle Firestore timestamp
+          date = date.toDate();
+        } else if (date) {
+          // Handle string or other formats
+          date = new Date(date);
+        }
+        
+        return {
+          ...data,
+          id: doc.id,
+          date: date
+        };
+      });
     } catch (error) {
       console.error("Error fetching student payments:", error);
       throw new Error(`Failed to fetch student payments: ${error.message}`);
@@ -112,10 +127,25 @@ export class PaymentRepository {
       
       const querySnapshot = await getDocs(q);
       
-      return querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Ensure date is a proper Date object
+        let date = data.date;
+        if (date && typeof date.toDate === 'function') {
+          // Handle Firestore timestamp
+          date = date.toDate();
+        } else if (date) {
+          // Handle string or other formats
+          date = new Date(date);
+        }
+        
+        return {
+          ...data,
+          id: doc.id,
+          date: date
+        };
+      });
     } catch (error) {
       console.error("Error fetching all payments:", error);
       throw new Error(`Failed to fetch all payments: ${error.message}`);
@@ -140,10 +170,25 @@ export class PaymentRepository {
       
       const querySnapshot = await getDocs(q);
       
-      return querySnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Ensure date is a proper Date object
+        let date = data.date;
+        if (date && typeof date.toDate === 'function') {
+          // Handle Firestore timestamp
+          date = date.toDate();
+        } else if (date) {
+          // Handle string or other formats
+          date = new Date(date);
+        }
+        
+        return {
+          ...data,
+          id: doc.id,
+          date: date
+        };
+      });
     } catch (error) {
       console.error("Error fetching payments by date range:", error);
       throw new Error(`Failed to fetch payments by date range: ${error.message}`);

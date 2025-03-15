@@ -97,6 +97,10 @@ describe('PaymentList Component', () => {
     expect(screen.getByText(/Monthly fee/i)).toBeInTheDocument();
     expect(screen.getByText(/Registration fee/i)).toBeInTheDocument();
     
+    // Check if dates are properly formatted with regex (to handle timezone differences)
+    expect(screen.getByText(/Jan (14|15), 2023/)).toBeInTheDocument();
+    expect(screen.getByText(/Jan (19|20), 2023/)).toBeInTheDocument();
+    
     // Check if date filter controls are rendered
     expect(screen.getByTestId('payment-start-date')).toBeInTheDocument();
     expect(screen.getByTestId('payment-end-date')).toBeInTheDocument();
