@@ -4,6 +4,19 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from '../App';
 
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+  BrowserRouter: ({ children }) => <div>{children}</div>,
+  Routes: ({ children }) => <div>{children}</div>,
+  Route: ({ path, element }) => <div>{element}</div>,
+  Link: ({ children, to, className, onClick }) => (
+    <a href={to} className={className} onClick={onClick}>
+      {children}
+    </a>
+  ),
+  useNavigate: () => jest.fn()
+}));
+
 // Mock services
 jest.mock('../services/AuthService', () => ({
   authService: {

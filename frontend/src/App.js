@@ -6,10 +6,14 @@ import StudentManagement from "./components/StudentManagement";
 import StudentForm from "./components/StudentForm";
 import AttendanceDashboard from "./components/AttendanceDashboard";
 import PaymentDashboard from "./components/PaymentDashboard";
+import FinancialReports from "./components/FinancialReports";
+import AttendanceReports from "./components/AttendanceReports";
+import PublicDashboard from "./components/PublicDashboard";
 import ErrorMessage from "./components/ErrorMessage";
 import Navbar from "./components/Navbar";
 import logo from "./assets/logo.png";
 import "./App.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 function App() {
   const [isRegister, setIsRegister] = useState(false);
@@ -182,6 +186,16 @@ function App() {
     if (view === "payments" && userRole === "admin") {
       return <PaymentDashboard userRole={userRole} />;
     }
+    
+    // Financial reports view (for admins)
+    if (view === "financial-reports" && userRole === "admin") {
+      return <FinancialReports userRole={userRole} />;
+    }
+    
+    // Attendance reports view (for admins)
+    if (view === "attendance-reports" && userRole === "admin") {
+      return <AttendanceReports userRole={userRole} />;
+    }
 
     // Default welcome view
     return (
@@ -201,29 +215,37 @@ function App() {
   };
 
   return (
-    <div className="App" data-testid="app">
-      {/* Navbar is only shown when user is authenticated */}
-      <Navbar 
-        user={user} 
-        userRole={userRole} 
-        onLogout={handleLogout} 
-        setView={setView} 
-      />
-      
-      {/* Only show the logo on login/register screen */}
-      {!user && (
-        <header className="App-header">
-          <div className="logo-container">
-            <img src={logo} alt="Company Logo" className="app-logo" />
-          </div>
-        </header>
-      )}
-      
-      <main>
-        {error && <ErrorMessage message={error} />}
-        {renderContent()}
-      </main>
-    </div>
+    <Router>
+      <div className="App" data-testid="app">
+        {/* Navbar is only shown when user is authenticated */}
+        <Navbar 
+          user={user} 
+          userRole={userRole} 
+          onLogout={handleLogout} 
+          setView={setView} 
+        />
+        
+        {/* Only show the logo on login/register screen */}
+        {!user && (
+          <header className="App-header">
+            <div className="logo-container">
+              <img src={logo} alt="Company Logo" className="app-logo" />
+            </div>
+          </header>
+        )}
+        
+        <main>
+          {error && <ErrorMessage message={error} />}
+          <Routes>
+            {/* Public route accessible without authentication */}
+            <Route path="/public-dashboard" element={<PublicDashboard />} />
+            
+            {/* All other routes render the main content with authentication checks */}
+            <Route path="*" element={renderContent()} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 

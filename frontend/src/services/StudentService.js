@@ -1,5 +1,6 @@
 // StudentService.js - FIXED version
 import { studentRepository } from "../repository/StudentRepository";
+import { sortStudentsByFirstName } from "../utils/sorting";
 
 export default class StudentService {
   constructor(studentRepository) {
@@ -49,11 +50,13 @@ export default class StudentService {
   }
 
   async getStudentsByStatus(status) {
-    return this.studentRepository.getStudentsByStatus(status);
+    const students = await this.studentRepository.getStudentsByStatus(status);
+    return sortStudentsByFirstName(students);
   }
 
   async getAllStudents() {
-    return this.studentRepository.getAllStudents();
+    const students = await this.studentRepository.getAllStudents();
+    return sortStudentsByFirstName(students);
   }
 
   async addBalance(studentId, amount) {

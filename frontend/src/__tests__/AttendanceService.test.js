@@ -133,7 +133,7 @@ describe('AttendanceService', () => {
   });
 
   describe('getEligibleStudents', () => {
-    it('should fetch students with eligible enrollment statuses', async () => {
+    it('should fetch students with eligible enrollment statuses and sort them by first name', async () => {
       // Setup
       const enrolledStudents = [
         { id: 'student1', firstName: 'John', lastName: 'Doe', enrollmentStatus: 'Enrolled' }
@@ -154,7 +154,20 @@ describe('AttendanceService', () => {
       // Verify
       expect(mockStudentRepository.getStudentsByStatus).toHaveBeenCalledWith('Enrolled');
       expect(mockStudentRepository.getStudentsByStatus).toHaveBeenCalledWith('Pending Payment');
-      expect(result).toEqual([...enrolledStudents, ...pendingPaymentStudents]);
+      
+      // Combine the arrays and sort them like the implementation does
+      const combinedStudents = [...enrolledStudents, ...pendingPaymentStudents];
+      const sortedStudents = [...combinedStudents].sort((a, b) => {
+        const firstNameA = (a.firstName || '').toLowerCase();
+        const firstNameB = (b.firstName || '').toLowerCase();
+        return firstNameA.localeCompare(firstNameB);
+      });
+      
+      expect(result).toEqual(sortedStudents);
+      
+      // Jane should come before John
+      expect(result[0].firstName).toBe('Jane');
+      expect(result[1].firstName).toBe('John');
     });
   });
 
