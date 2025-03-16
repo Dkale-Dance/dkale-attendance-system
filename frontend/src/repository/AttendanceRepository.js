@@ -43,6 +43,30 @@ export class AttendanceRepository {
       throw new Error(`Failed to fetch attendance: ${error.message}`);
     }
   }
+  
+  /**
+   * Gets a single attendance record for a specific student and date
+   * @param {Date} date - The date of attendance
+   * @param {string} studentId - The student's ID
+   * @returns {Promise<Object|null>} Attendance record or null if not found
+   */
+  async getAttendanceRecord(date, studentId) {
+    try {
+      const attendanceData = await this.getAttendanceByDate(date);
+      // Ensure we always return the complete record structure even if some properties are missing
+      const record = attendanceData[studentId] || null;
+      
+      // If record exists but doesn't have attributes, add an empty attributes object
+      if (record && !record.attributes) {
+        record.attributes = {};
+      }
+      
+      return record;
+    } catch (error) {
+      console.error("Error fetching attendance record:", error);
+      throw new Error(`Failed to fetch attendance record: ${error.message}`);
+    }
+  }
 
   /**
    * Updates attendance for a specific student on a given date

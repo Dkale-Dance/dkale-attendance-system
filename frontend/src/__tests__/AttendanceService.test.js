@@ -24,7 +24,8 @@ describe('AttendanceService', () => {
       updateAttendance: jest.fn(),
       bulkUpdateAttendance: jest.fn(),
       updateAttendanceWithAttributes: jest.fn(),
-      bulkUpdateAttendanceWithAttributes: jest.fn()
+      bulkUpdateAttendanceWithAttributes: jest.fn(),
+      getAttendanceRecord: jest.fn().mockResolvedValue(null) // Add mock for getAttendanceRecord
     };
     
     mockStudentRepository = {
@@ -33,12 +34,14 @@ describe('AttendanceService', () => {
     };
     
     mockStudentService = {
-      addBalance: jest.fn()
+      addBalance: jest.fn(),
+      reduceBalance: jest.fn() // Add mock for reduceBalance
     };
     
     // Reset the mock implementation
     const { studentService } = require('../services/StudentService');
     studentService.addBalance.mockImplementation(mockStudentService.addBalance);
+    studentService.reduceBalance = mockStudentService.reduceBalance; // Add mock for reduceBalance
     
     attendanceService = new AttendanceService(mockAttendanceRepository, mockStudentRepository, studentService);
   });
@@ -383,10 +386,14 @@ describe('AttendanceService', () => {
       const attributes = { late: true, noShoes: true, notInUniform: true };
       const { studentService } = require('../services/StudentService');
       
+      // Mock that there's no previous record
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue(null);
+      
       // Exercise
       await attendanceService.updateAttendanceWithFee(mockDate, studentId, status, attributes);
       
       // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
       expect(mockAttendanceRepository.updateAttendanceWithAttributes).toHaveBeenCalledWith(
         mockDate, studentId, status, attributes
       );
@@ -400,10 +407,14 @@ describe('AttendanceService', () => {
       const attributes = { late: true, noShoes: true, notInUniform: true }; // These should be ignored for absent
       const { studentService } = require('../services/StudentService');
       
+      // Mock that there's no previous record
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue(null);
+      
       // Exercise
       await attendanceService.updateAttendanceWithFee(mockDate, studentId, status, attributes);
       
       // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
       expect(mockAttendanceRepository.updateAttendanceWithAttributes).toHaveBeenCalledWith(
         mockDate, studentId, status, attributes
       );
@@ -417,14 +428,44 @@ describe('AttendanceService', () => {
       const attributes = { late: true, noShoes: true, notInUniform: true }; // These should be ignored
       const { studentService } = require('../services/StudentService');
       
+      // Mock that there's no previous record
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue(null);
+      
       // Exercise
       await attendanceService.updateAttendanceWithFee(mockDate, studentId, status, attributes);
       
       // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
       expect(mockAttendanceRepository.updateAttendanceWithAttributes).toHaveBeenCalledWith(
         mockDate, studentId, status, attributes
       );
       expect(studentService.addBalance).not.toHaveBeenCalled(); // No fee for medical absence
+    });
+    
+    it('should adjust fees when changing from absent to medicalAbsence', async () => {
+      // Setup
+      const studentId = 'student1';
+      const previousStatus = 'absent';
+      const newStatus = 'medicalAbsence';
+      const attributes = {};
+      const { studentService } = require('../services/StudentService');
+      
+      // Mock previous record with 'absent' status
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue({
+        status: previousStatus,
+        attributes: {}
+      });
+      
+      // Exercise
+      await attendanceService.updateAttendanceWithFee(mockDate, studentId, newStatus, attributes);
+      
+      // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
+      expect(mockAttendanceRepository.updateAttendanceWithAttributes).toHaveBeenCalledWith(
+        mockDate, studentId, newStatus, attributes
+      );
+      expect(studentService.reduceBalance).toHaveBeenCalledWith(studentId, 5); // Should remove the $5 fee
+      expect(studentService.addBalance).not.toHaveBeenCalled(); // No new fee added
     });
   });
 
@@ -435,6 +476,10 @@ describe('AttendanceService', () => {
       const status = 'present';
       const attributes = { late: true, noShoes: true };
       const { studentService } = require('../services/StudentService');
+      
+      // Mock the getAttendanceRecord to return null for each student (no previous record)
+      mockAttendanceRepository.getAttendanceRecord
+        .mockImplementation(() => Promise.resolve(null));
       
       // Exercise
       await attendanceService.bulkUpdateAttendanceWithFee(mockDate, studentIds, status, attributes);
@@ -456,6 +501,10 @@ describe('AttendanceService', () => {
       const attributes = { late: true, noShoes: true, notInUniform: true }; // These should be ignored
       const { studentService } = require('../services/StudentService');
       
+      // Mock the getAttendanceRecord to return null for each student (no previous record)
+      mockAttendanceRepository.getAttendanceRecord
+        .mockImplementation(() => Promise.resolve(null));
+      
       // Exercise
       await attendanceService.bulkUpdateAttendanceWithFee(mockDate, studentIds, status, attributes);
       
@@ -467,6 +516,36 @@ describe('AttendanceService', () => {
       expect(studentService.addBalance).toHaveBeenCalledTimes(2);
       expect(studentService.addBalance).toHaveBeenCalledWith('student1', 5);
       expect(studentService.addBalance).toHaveBeenCalledWith('student2', 5);
+    });
+    
+    it('should handle fee adjustments when changing from absent to medicalAbsence', async () => {
+      // Setup
+      const studentIds = ['student1', 'student2'];
+      const newStatus = 'medicalAbsence';
+      const attributes = {};
+      const { studentService } = require('../services/StudentService');
+      
+      // Mock that both students have a previous 'absent' status
+      mockAttendanceRepository.getAttendanceRecord
+        .mockImplementation((date, studentId) => {
+          return Promise.resolve({
+            status: 'absent',
+            attributes: {}
+          });
+        });
+      
+      // Exercise
+      await attendanceService.bulkUpdateAttendanceWithFee(mockDate, studentIds, newStatus, attributes);
+      
+      // Verify
+      expect(mockAttendanceRepository.bulkUpdateAttendanceWithAttributes).toHaveBeenCalledWith(
+        mockDate, studentIds, newStatus, attributes
+      );
+      // Should reduce balance by $5 for each student
+      expect(studentService.reduceBalance).toHaveBeenCalledTimes(2);
+      expect(studentService.reduceBalance).toHaveBeenCalledWith('student1', 5);
+      expect(studentService.reduceBalance).toHaveBeenCalledWith('student2', 5);
+      expect(studentService.addBalance).not.toHaveBeenCalled(); // No new fees added
     });
   });
 });
