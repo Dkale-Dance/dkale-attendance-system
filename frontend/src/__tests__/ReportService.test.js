@@ -215,11 +215,16 @@ describe("ReportService", () => {
     expect(mockReportRepository.getStudentPaymentHistory).toHaveBeenCalledTimes(2);
     
     expect(result).toHaveLength(2);
-    expect(result[0]).toHaveProperty("id", "student123");
+    
+    // We're now sorting by name, and "Jane" comes alphabetically before "John"
+    expect(result[0]).toHaveProperty("id", "student456"); // Jane
     expect(result[0]).toHaveProperty("financialSummary");
-    expect(result[0].financialSummary).toHaveProperty("totalFees", 600); // 500 + 100
-    expect(result[0].financialSummary).toHaveProperty("totalPayments", 100);
-    expect(result[0].financialSummary).toHaveProperty("currentBalance", 500);
+    expect(result[0].financialSummary).toHaveProperty("totalFees", 350); // 200 + 150
+    expect(result[0].financialSummary).toHaveProperty("totalPayments", 150);
+    expect(result[0].financialSummary).toHaveProperty("currentBalance", 200);
+    
+    expect(result[1]).toHaveProperty("id", "student123"); // John
+    expect(result[1].financialSummary).toHaveProperty("totalFees", 600); // 500 + 100
   });
 
   test("should generate monthly attendance report", async () => {

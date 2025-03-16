@@ -152,7 +152,15 @@ const mockStudentRepository = {
   
       // Assert
       expect(mockStudentRepository.getStudentsByStatus).toHaveBeenCalledWith("Enrolled");
-      expect(result).toEqual(mockStudents);
+      
+      // Since we're now sorting by firstName, we need to sort the mock data the same way
+      const expectedSortedStudents = [...mockStudents].sort((a, b) => {
+        const firstNameA = (a.firstName || '').toLowerCase();
+        const firstNameB = (b.firstName || '').toLowerCase();
+        return firstNameA.localeCompare(firstNameB);
+      });
+      
+      expect(result).toEqual(expectedSortedStudents);
     });
   
     test("should add student balance", async () => {
