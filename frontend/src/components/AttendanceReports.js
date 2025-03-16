@@ -136,7 +136,12 @@ const AttendanceReports = ({ userRole }) => {
                 </thead>
                 <tbody>
                   {Object.entries(report.summary.byStudent)
-                    .sort((a, b) => b[1].attendanceRate - a[1].attendanceRate) // Sort by attendance rate
+                    .sort((a, b) => {
+                      // First sort by student name (alphabetically)
+                      const nameA = a[1].studentName.toLowerCase();
+                      const nameB = b[1].studentName.toLowerCase();
+                      return nameA.localeCompare(nameB);
+                    }) // Sort alphabetically by student name
                     .map(([studentId, stats]) => (
                       <tr key={studentId}>
                         <td>{stats.studentName}</td>

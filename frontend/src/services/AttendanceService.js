@@ -1,6 +1,7 @@
 import { attendanceRepository } from "../repository/AttendanceRepository";
 import { studentRepository } from "../repository/StudentRepository";
 import { studentService } from "../services/StudentService";
+import { sortStudentsByFirstName } from "../utils/sorting";
 
 export default class AttendanceService {
   constructor(attendanceRepository, studentRepository, studentServiceInstance = studentService) {
@@ -198,7 +199,7 @@ export default class AttendanceService {
 
   /**
    * Get students eligible for attendance tracking (Enrolled or Pending Payment)
-   * @returns {Promise<Array>} Array of student objects
+   * @returns {Promise<Array>} Array of student objects sorted by first name
    */
   async getEligibleStudents() {
     try {
@@ -208,8 +209,8 @@ export default class AttendanceService {
       // Get students with Pending Payment status
       const pendingPaymentStudents = await this.studentRepository.getStudentsByStatus('Pending Payment');
       
-      // Combine the two sets of students
-      return [...enrolledStudents, ...pendingPaymentStudents];
+      // Combine the two sets of students and sort by first name
+      return sortStudentsByFirstName([...enrolledStudents, ...pendingPaymentStudents]);
     } catch (error) {
       console.error("Error fetching eligible students:", error);
       throw new Error(`Failed to fetch eligible students: ${error.message}`);

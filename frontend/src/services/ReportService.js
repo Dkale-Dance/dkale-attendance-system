@@ -2,6 +2,7 @@ import { reportRepository } from "../repository/ReportRepository";
 import { studentRepository } from "../repository/StudentRepository";
 import { attendanceRepository } from "../repository/AttendanceRepository";
 import { attendanceService } from "../services/AttendanceService";
+import { sortByName } from "../utils/sorting";
 
 export default class ReportService {
   constructor(reportRepository, studentRepository, attendanceRepository, attendanceService) {
@@ -39,7 +40,7 @@ export default class ReportService {
         const attendanceData = attendanceDay.data;
         
         // Process each student's attendance for this day
-        for (const [studentId, attendance] of Object.entries(attendanceData)) {
+        for (const [, attendance] of Object.entries(attendanceData)) {
           // Use the attendance service to calculate the fee based on status and attributes
           const fee = this.attendanceService.calculateAttendanceFee(
             attendance.status, 
@@ -210,7 +211,7 @@ export default class ReportService {
     for (const payment of monthlyPayments) {
       const method = payment.paymentMethod;
       const amount = payment.amount || 0;
-      const studentId = payment.studentId;
+      const paymentStudentId = payment.studentId;
       
       // Add to method totals
       if (method === 'cash') {
@@ -220,15 +221,15 @@ export default class ReportService {
       }
       
       // Add to student totals
-      if (!breakdown.byStudent[studentId]) {
-        const student = studentMap[studentId];
-        breakdown.byStudent[studentId] = {
+      if (!breakdown.byStudent[paymentStudentId]) {
+        const student = studentMap[paymentStudentId];
+        breakdown.byStudent[paymentStudentId] = {
           studentName: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
           total: 0
         };
       }
       
-      breakdown.byStudent[studentId].total += amount;
+      breakdown.byStudent[paymentStudentId].total += amount;
     }
     
     return breakdown;
@@ -262,6 +263,17 @@ export default class ReportService {
       // Total fees charged = current outstanding balance + all payments made
       const totalFeesCharged = totalOutstandingBalance + totalPaymentsReceived;
       
+      // Map students to the format needed and sort by name
+      const mappedStudents = students.map(student => ({
+        id: student.id,
+        name: `${student.firstName} ${student.lastName}`,
+        balance: student.balance || 0,
+        email: student.email
+      }));
+      
+      // Sort students by name (which is derived from firstName)
+      const sortedStudents = sortByName(mappedStudents);
+      
       return {
         title: 'Cumulative Financial Report',
         summary: {
@@ -269,12 +281,7 @@ export default class ReportService {
           totalPaymentsReceived,
           outstandingBalance: totalOutstandingBalance
         },
-        studentBalances: students.map(student => ({
-          id: student.id,
-          name: `${student.firstName} ${student.lastName}`,
-          balance: student.balance || 0,
-          email: student.email
-        }))
+        studentBalances: sortedStudents
       };
     } catch (error) {
       console.error("Error generating cumulative financial report:", error);
@@ -527,7 +534,8 @@ export default class ReportService {
         }
       }
       
-      return studentFinancialSummaries;
+      // Sort the summaries by name (derived from firstName)
+      return sortByName(studentFinancialSummaries);
     } catch (error) {
       console.error("Error getting public dashboard data:", error);
       throw new Error(`Failed to get public dashboard data: ${error.message}`);

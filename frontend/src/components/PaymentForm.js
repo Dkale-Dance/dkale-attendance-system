@@ -25,11 +25,8 @@ const PaymentForm = ({ onSuccess, onCancel }) => {
     const loadStudents = async () => {
       try {
         setLoading(true);
-        const allStudents = await studentService.getAllStudents();
-        // Sort students by name
-        const sortedStudents = allStudents.sort((a, b) => 
-          `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
-        );
+        // Students are already sorted by first name in the service
+        const sortedStudents = await studentService.getAllStudents();
         setStudents(sortedStudents);
       } catch (err) {
         setError(`Failed to load students: ${err.message}`);
