@@ -1,4 +1,4 @@
-import { getFirestore, doc, collection, query, where, getDocs, Timestamp, orderBy } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy } from "firebase/firestore";
 import app from "../lib/firebase/config/config";
 
 export class ReportRepository {
