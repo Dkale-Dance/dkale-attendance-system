@@ -146,7 +146,22 @@ export default class AttendanceService {
   }
 
   /**
+   * Calculate the fee difference between two attendance states
+   * @param {string} oldStatus - Previous attendance status
+   * @param {Object} oldAttributes - Previous attendance attributes
+   * @param {string} newStatus - New attendance status
+   * @param {Object} newAttributes - New attendance attributes
+   * @returns {number} - Fee difference (positive means fee increase, negative means fee decrease)
+   */
+  calculateFeeDifference(oldStatus, oldAttributes, newStatus, newAttributes) {
+    const oldFee = this.calculateAttendanceFee(oldStatus, oldAttributes || {});
+    const newFee = this.calculateAttendanceFee(newStatus, newAttributes || {});
+    return newFee - oldFee;
+  }
+
+  /**
    * Update attendance and apply fee to student balance in a single operation
+   * DEPRECATED: Use updateAttendanceWithFeeAdjustment instead which properly handles fee adjustments
    * @param {Date} date - The date of attendance
    * @param {string} studentId - The student's ID
    * @param {string} status - Attendance status
@@ -154,22 +169,87 @@ export default class AttendanceService {
    * @returns {Promise<void>}
    */
   async updateAttendanceWithFee(date, studentId, status, attributes) {
+    console.warn('updateAttendanceWithFee is deprecated. Use updateAttendanceWithFeeAdjustment instead.');
+    // This method is now just a wrapper around updateAttendanceWithFeeAdjustment to ensure proper fee adjustments
+    return this.updateAttendanceWithFeeAdjustment(date, studentId, status, attributes);
+  }
+
+  /**
+   * Update attendance with fee adjustment based on previous attendance status
+   * @param {Date} date - The date of attendance
+   * @param {string} studentId - The student's ID
+   * @param {string} status - New attendance status
+   * @param {Object} attributes - New attendance attributes
+   * @returns {Promise<void>}
+   */
+  async updateAttendanceWithFeeAdjustment(date, studentId, status, attributes = {}) {
     this.validateStatus(status);
     
-    // Calculate fee - all statuses can have attributes now
-    const fee = this.calculateAttendanceFee(status, attributes);
-    
-    // Update attendance record
-    await this.attendanceRepository.updateAttendanceWithAttributes(date, studentId, status, attributes);
-    
-    // Apply fee to student balance if applicable
-    if (fee > 0) {
-      await this.studentService.addBalance(studentId, fee);
+    try {
+      // Get the previous attendance record to calculate fee difference
+      const previousRecord = await this.attendanceRepository.getAttendanceRecord(date, studentId);
+      
+      // Normalize attributes to always be an object
+      const normalizedAttributes = attributes || {};
+      
+      // Update attendance record first to ensure data consistency
+      await this.attendanceRepository.updateAttendanceWithAttributes(date, studentId, status, normalizedAttributes);
+      
+      // If there was no previous record, just apply the new fee (if any)
+      if (!previousRecord) {
+        const newFee = this.calculateAttendanceFee(status, normalizedAttributes);
+        if (newFee > 0) {
+          await this.studentService.addBalance(studentId, newFee);
+        }
+        return;
+      }
+      
+      // Ensure previous record attributes are properly initialized
+      const previousAttributes = previousRecord.attributes || {};
+      
+      // Get previous and new status for logging/debugging
+      const previousStatus = previousRecord.status;
+      console.log(`Changing attendance for student ${studentId} from ${previousStatus} to ${status}`);
+      
+      // Calculate fee difference between old and new status
+      const feeDifference = this.calculateFeeDifference(
+        previousStatus,
+        previousAttributes,
+        status,
+        normalizedAttributes
+      );
+      
+      console.log(`Fee difference calculated: ${feeDifference}`);
+      
+      // Apply fee adjustment to student balance
+      if (feeDifference > 0) {
+        // Fee increased, add to balance
+        console.log(`Adding ${feeDifference} to student ${studentId} balance`);
+        await this.studentService.addBalance(studentId, feeDifference);
+      } else if (feeDifference < 0) {
+        // Fee decreased, reduce from balance
+        const amountToReduce = Math.abs(feeDifference);
+        console.log(`Reducing ${amountToReduce} from student ${studentId} balance`);
+        await this.studentService.reduceBalance(studentId, amountToReduce);
+      } else {
+        console.log(`No fee adjustment needed for student ${studentId}`);
+      }
+      
+      // Return the adjustment amount for reference
+      return {
+        previousStatus,
+        newStatus: status,
+        feeDifference
+      };
+    } catch (error) {
+      console.error("Error updating attendance with fee adjustment:", error);
+      throw new Error(`Failed to update attendance with fee adjustment: ${error.message}`);
     }
   }
 
   /**
    * Update attendance with fee for multiple students
+   * DEPRECATED: Use bulkUpdateAttendanceWithFeeAdjustment instead which properly handles fee adjustments
    * @param {Date} date - The date of attendance
    * @param {string[]} studentIds - Array of student IDs
    * @param {string} status - Attendance status
@@ -177,23 +257,103 @@ export default class AttendanceService {
    * @returns {Promise<void>}
    */
   async bulkUpdateAttendanceWithFee(date, studentIds, status, attributes) {
+    console.warn('bulkUpdateAttendanceWithFee is deprecated. Use bulkUpdateAttendanceWithFeeAdjustment instead.');
+    // This method is now just a wrapper around bulkUpdateAttendanceWithFeeAdjustment
+    return this.bulkUpdateAttendanceWithFeeAdjustment(date, studentIds, status, attributes);
+  }
+  
+  /**
+   * Update attendance with fee adjustment for multiple students
+   * @param {Date} date - The date of attendance
+   * @param {string[]} studentIds - Array of student IDs
+   * @param {string} status - New attendance status
+   * @param {Object} attributes - New attendance attributes
+   * @returns {Promise<Array>} Array of adjustment results
+   */
+  async bulkUpdateAttendanceWithFeeAdjustment(date, studentIds, status, attributes = {}) {
     this.validateStatus(status);
     
     if (!studentIds || studentIds.length === 0) {
       throw new Error('No students selected');
     }
     
-    // Calculate fee - all statuses can have attributes now
-    const fee = this.calculateAttendanceFee(status, attributes);
-    
-    // Update attendance records
-    await this.attendanceRepository.bulkUpdateAttendanceWithAttributes(date, studentIds, status, attributes);
-    
-    // Apply fee to each student balance if applicable
-    if (fee > 0) {
+    try {
+      // Normalize attributes to always be an object
+      const normalizedAttributes = attributes || {};
+      
+      // Update attendance records first in bulk for efficiency
+      await this.attendanceRepository.bulkUpdateAttendanceWithAttributes(date, studentIds, status, normalizedAttributes);
+      
+      console.log(`Bulk updating attendance for ${studentIds.length} students to ${status}`);
+      
+      // Process fee adjustments for each student individually and collect results
+      const adjustmentResults = [];
+      
       for (const studentId of studentIds) {
-        await this.studentService.addBalance(studentId, fee);
+        try {
+          // Get previous attendance record
+          const previousRecord = await this.attendanceRepository.getAttendanceRecord(date, studentId);
+          
+          // If no previous record, just apply new fee if applicable
+          if (!previousRecord) {
+            const newFee = this.calculateAttendanceFee(status, normalizedAttributes);
+            if (newFee > 0) {
+              await this.studentService.addBalance(studentId, newFee);
+              adjustmentResults.push({
+                studentId,
+                previousStatus: null,
+                newStatus: status, 
+                feeDifference: newFee
+              });
+            }
+            continue;
+          }
+          
+          // Get previous status and ensure attributes are initialized
+          const previousStatus = previousRecord.status;
+          const previousAttributes = previousRecord.attributes || {};
+          
+          console.log(`Student ${studentId}: Changing from ${previousStatus} to ${status}`);
+          
+          // Calculate fee difference
+          const feeDifference = this.calculateFeeDifference(
+            previousStatus,
+            previousAttributes,
+            status,
+            normalizedAttributes
+          );
+          
+          console.log(`Student ${studentId}: Fee difference = ${feeDifference}`);
+          
+          // Apply fee adjustment
+          if (feeDifference > 0) {
+            await this.studentService.addBalance(studentId, feeDifference);
+          } else if (feeDifference < 0) {
+            const amountToReduce = Math.abs(feeDifference);
+            await this.studentService.reduceBalance(studentId, amountToReduce);
+          }
+          
+          // Record the adjustment
+          adjustmentResults.push({
+            studentId,
+            previousStatus,
+            newStatus: status,
+            feeDifference
+          });
+        } catch (error) {
+          console.error(`Error processing student ${studentId}:`, error);
+          adjustmentResults.push({
+            studentId,
+            error: error.message
+          });
+          // Continue with next student instead of failing the entire operation
+        }
       }
+      
+      return adjustmentResults;
+    } catch (error) {
+      console.error("Error in bulk update with fee adjustment:", error);
+      throw new Error(`Failed to perform bulk update with fee adjustment: ${error.message}`);
     }
   }
 
