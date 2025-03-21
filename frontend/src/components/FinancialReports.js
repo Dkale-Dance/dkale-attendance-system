@@ -42,7 +42,7 @@ const FinancialReports = ({ userRole }) => {
       setError('');
       
       try {
-        if (activeTab === 'monthly' || activeTab === 'monthly' && !monthlyReport) {
+        if (activeTab === 'monthly' || (activeTab === 'monthly' && !monthlyReport)) {
           // Fetch monthly report for current date
           const monthlyReportData = await reportService.generateDetailedMonthlyFinancialReport(currentDate);
           setMonthlyReport(monthlyReportData);
@@ -68,7 +68,7 @@ const FinancialReports = ({ userRole }) => {
     };
     
     fetchReportData();
-  }, [userRole, activeTab, currentDate, dateRange]);
+  }, [userRole, activeTab, currentDate, dateRange, monthlyReport]);
 
   // Only admin can access reports
   if (userRole !== 'admin') {
@@ -142,10 +142,10 @@ const FinancialReports = ({ userRole }) => {
       });
   };
 
-  // Render month title (e.g., "January 2023")
-  const getMonthTitle = (date) => {
-    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
-  };
+  // Render month title (e.g., "January 2023") - defined for future use
+  // const getMonthTitle = (date) => {
+  //   return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  // };
 
   // Determine payment status class for styling
   const getPaymentStatusClass = (status) => {

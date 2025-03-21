@@ -451,8 +451,8 @@ export default class ReportService {
       const startDate = options.startDate || new Date(now.getFullYear(), 0, 1); // Jan 1 of current year
       const endDate = options.endDate || new Date(now.getFullYear(), 11, 31); // Dec 31 of current year
       
-      // Helper function to format month date
-      const getMonthDate = (year, month) => new Date(year, month, 15);
+      // Helper function to format month date - used in other methods
+      // const getMonthDate = (year, month) => new Date(year, month, 15);
       
       // Get all months in the date range
       const months = [];

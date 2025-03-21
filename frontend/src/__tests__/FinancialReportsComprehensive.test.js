@@ -239,7 +239,7 @@ describe('FinancialReports Comprehensive Component', () => {
     fireEvent.click(screen.getByTestId('visualization-tab'));
     
     // Now visualization should be loaded
-    await waitFor(() => expect(screen.getByTestId('visualization-section')).toBeInTheDocument());
+    await screen.findByTestId('visualization-section');
     
     // Check that chart components are present
     expect(screen.getByTestId('trend-chart')).toBeInTheDocument();
