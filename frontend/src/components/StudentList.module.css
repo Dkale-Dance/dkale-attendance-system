@@ -48,25 +48,121 @@
   }
   
   .student-list button {
-    background-color: #dc3545;
     color: white;
     border: none;
     padding: 8px 12px;
     border-radius: 4px;
     cursor: pointer;
+    margin-right: 10px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
-  .student-list button:hover:not(:disabled) {
+  .student-list button[data-testid^="remove-button"] {
+    background-color: #dc3545;
+  }
+  
+  .student-list button[data-testid^="edit-button"] {
+    background-color: #007bff;
+  }
+  
+  .student-list button[data-testid^="remove-button"]:hover:not(:disabled) {
     background-color: #c82333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .student-list button[data-testid^="edit-button"]:hover {
+    background-color: #0069d9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
   
   .student-list button:disabled {
     background-color: #6c757d;
     cursor: not-allowed;
+    opacity: 0.65;
   }
   
   .student-list select {
     padding: 6px;
     border: 1px solid #ced4da;
     border-radius: 4px;
+  }
+  
+  .button-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  @media (max-width: 768px) {
+    .student-list {
+      padding: 15px;
+    }
+    
+    .student-list th, 
+    .student-list td {
+      padding: 10px 8px;
+      font-size: 14px;
+    }
+    
+    .student-list button {
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+    
+    .filter-controls {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .filter-controls label {
+      margin-bottom: 5px;
+    }
+    
+    .filter-controls select {
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .student-list {
+      padding: 10px;
+    }
+    
+    .student-list table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    
+    .button-container {
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .student-list button {
+      width: 100%;
+      margin-right: 0;
+      padding: 8px 5px;
+    }
+  }
+  
+  /* Portrait mode for iPhones */
+  @media (max-width: 400px) and (orientation: portrait) {
+    .student-list th:nth-child(4),
+    .student-list td:nth-child(4) {
+      display: none; /* Hide balance column on very small devices in portrait */
+    }
+    
+    .student-list th, 
+    .student-list td {
+      padding: 8px 5px;
+      font-size: 12px;
+    }
+    
+    .student-list button {
+      font-size: 12px;
+      padding: 6px 8px;
+    }
   }

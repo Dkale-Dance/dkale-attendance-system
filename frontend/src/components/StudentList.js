@@ -121,7 +121,16 @@ const StudentList = ({ onSelectStudent }) => {
                   </select>
                 </td>
                 <td>${(student.balance || 0).toFixed(2)}</td>
-                <td>
+                <td className={styles['button-container']}>
+                  {onSelectStudent && (
+                    <button
+                      onClick={() => onSelectStudent(student)}
+                      data-testid={`edit-button-${student.id}`}
+                      title="Edit student information"
+                    >
+                      Edit
+                    </button>
+                  )}
                   <button 
                     onClick={() => handleRemoveStudent(student.id)}
                     disabled={(student.balance || 0) > 0}
@@ -130,14 +139,6 @@ const StudentList = ({ onSelectStudent }) => {
                   >
                     Remove
                   </button>
-                  {onSelectStudent && (
-                    <button
-                      onClick={() => onSelectStudent(student)}
-                      data-testid={`edit-button-${student.id}`}
-                    >
-                      Edit
-                    </button>
-                  )}
                 </td>
               </tr>
             ))}
