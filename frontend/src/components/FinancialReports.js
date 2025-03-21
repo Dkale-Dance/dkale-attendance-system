@@ -42,7 +42,7 @@ const FinancialReports = ({ userRole }) => {
       setError('');
       
       try {
-        if (activeTab === 'monthly' || (activeTab === 'monthly' && !monthlyReport)) {
+        if (activeTab === 'monthly') {
           // Fetch monthly report for current date
           const monthlyReportData = await reportService.generateDetailedMonthlyFinancialReport(currentDate);
           setMonthlyReport(monthlyReportData);
@@ -68,7 +68,7 @@ const FinancialReports = ({ userRole }) => {
     };
     
     fetchReportData();
-  }, [userRole, activeTab, currentDate, dateRange, monthlyReport]);
+  }, [userRole, activeTab, currentDate, dateRange]);
 
   // Only admin can access reports
   if (userRole !== 'admin') {
