@@ -61,13 +61,15 @@ const StudentManagement = ({ userRole }) => {
       ) : (
         // Show the list view
         <>
-          <button 
-            onClick={() => switchToFormView()}
-            data-testid="add-student-button"
-            className={styles['add-button']}
-          >
-            Add New Student
-          </button>
+          <div className={styles['button-container']}>
+            <button 
+              onClick={() => switchToFormView()}
+              data-testid="add-student-button"
+              className={styles['add-button']}
+            >
+              Add New Student
+            </button>
+          </div>
           
           <StudentList onSelectStudent={handleSelectStudent} />
         </>
