@@ -3,6 +3,16 @@ import { reportService } from '../services/ReportService';
 import ErrorMessage from './ErrorMessage';
 import './PublicDashboard.css'; // Using the new CSS file
 
+// Utility function to determine balance class based on amount
+const getBalanceClass = (balance) => {
+  if (balance > 0) {
+    return "negative-balance";
+  } else if (balance < 0) {
+    return "positive-balance";
+  }
+  return "zero-balance";
+};
+
 const PublicDashboard = () => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -81,12 +91,7 @@ const PublicDashboard = () => {
     
     // Calculate the balance for styling
     const balance = studentDetails.financialSummary.calculatedBalance || studentDetails.financialSummary.currentBalance;
-    let balanceClass = "zero-balance";
-    if (balance > 0) {
-      balanceClass = "negative-balance";
-    } else if (balance < 0) {
-      balanceClass = "positive-balance";
-    }
+    const balanceClass = getBalanceClass(balance);
     
     return (
       <div className="student-details" data-testid="student-details">
@@ -224,12 +229,7 @@ const PublicDashboard = () => {
             <tbody>
               {students.map(student => {
                 const balance = student.financialSummary.calculatedBalance || student.financialSummary.currentBalance;
-                let balanceClass = "zero-balance";
-                if (balance > 0) {
-                  balanceClass = "negative-balance";
-                } else if (balance < 0) {
-                  balanceClass = "positive-balance";
-                }
+                const balanceClass = getBalanceClass(balance);
                 
                 return (
                   <tr key={student.id}>
