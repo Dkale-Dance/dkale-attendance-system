@@ -693,7 +693,12 @@ export default class ReportService {
       const monthlyAttendance = await this.reportRepository.getMonthlyAttendance(monthDate);
       
       // Get all students for reference
-      const students = await this.studentRepository.getAllStudents();
+      const allStudents = await this.studentRepository.getAllStudents();
+      
+      // Filter for only enrolled or pending payment students
+      const enrolledStudents = allStudents.filter(student => 
+        student.enrollmentStatus === 'Enrolled' || student.enrollmentStatus === 'Pending Payment'
+      );
       
       // Calculate total attendance days in the month
       const totalDays = monthlyAttendance.length;
@@ -709,11 +714,12 @@ export default class ReportService {
         noShoesCount: 0,
         notInUniformCount: 0,
         attendanceRate: 0,
-        byStudent: {}
+        byStudent: {},
+        enrolledStudentCount: enrolledStudents.length
       };
       
-      // Initialize student attendance records
-      students.forEach(student => {
+      // Initialize student attendance records for enrolled students only
+      enrolledStudents.forEach(student => {
         attendanceStats.byStudent[student.id] = {
           studentName: `${student.firstName} ${student.lastName}`,
           present: 0,
@@ -723,12 +729,13 @@ export default class ReportService {
           late: 0,
           noShoes: 0,
           notInUniform: 0,
-          attendanceRate: 0
+          attendanceRate: 0,
+          enrollmentStatus: student.enrollmentStatus
         };
       });
       
-      // Count total possible student attendance days
-      const totalPossibleAttendanceDays = totalDays * students.length;
+      // Count total possible student attendance days (only for enrolled students)
+      const totalPossibleAttendanceDays = totalDays * enrolledStudents.length;
       
       // Process each attendance day
       for (const attendanceDay of monthlyAttendance) {
