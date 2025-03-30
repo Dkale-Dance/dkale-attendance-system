@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../services/ReportService';
 import ErrorMessage from './ErrorMessage';
-import styles from './StudentManagement.module.css'; // Reusing existing styles
+import './PublicDashboard.css'; // Using the new CSS file
+
+// Utility function to determine balance class based on amount
+const getBalanceClass = (balance) => {
+  if (balance > 0) {
+    return "negative-balance";
+  } else if (balance < 0) {
+    return "positive-balance";
+  }
+  return "zero-balance";
+};
 
 const PublicDashboard = () => {
   const [students, setStudents] = useState([]);
@@ -79,47 +89,49 @@ const PublicDashboard = () => {
   const renderStudentDetails = () => {
     if (!studentDetails) return null;
     
+    // Calculate the balance for styling
+    const balance = studentDetails.financialSummary.calculatedBalance || studentDetails.financialSummary.currentBalance;
+    const balanceClass = getBalanceClass(balance);
+    
     return (
-      <div className={styles['student-details']} data-testid="student-details">
+      <div className="student-details" data-testid="student-details">
         <button 
           onClick={handleBackToList}
-          className={styles['back-button']}
+          className="back-button"
           data-testid="back-to-list"
         >
           ← Back to List
         </button>
         
         <h2>{studentDetails.student.name}</h2>
-        <p className={styles['student-info']}>Email: {studentDetails.student.email}</p>
+        <p className="student-info">
+          <strong>Email:</strong> {studentDetails.student.email}
+        </p>
         
-        <div className={styles['financial-summary']}>
-          <div className={styles['summary-item']}>
+        <div className="financial-summary">
+          <div className="summary-item">
             <h3>Total Fees</h3>
             <p>{formatCurrency(studentDetails.financialSummary.totalFeesCharged)}</p>
           </div>
-          <div className={styles['summary-item']}>
+          <div className="summary-item">
             <h3>Payments Made</h3>
             <p>{formatCurrency(studentDetails.financialSummary.totalPaymentsMade)}</p>
           </div>
-          <div className={styles['summary-item']}>
+          <div className="summary-item">
             <h3>Current Balance</h3>
-            <p className={
-              (studentDetails.financialSummary.calculatedBalance || studentDetails.financialSummary.currentBalance) > 0 
-                ? styles['negative-balance'] 
-                : styles['positive-balance']
-            }>
-              {formatCurrency(studentDetails.financialSummary.calculatedBalance || studentDetails.financialSummary.currentBalance)}
+            <p className={balanceClass}>
+              {formatCurrency(balance)}
             </p>
           </div>
         </div>
         
         {/* Payment History Section */}
-        <div className={styles['history-section']} data-testid="payment-history">
+        <div className="history-section" data-testid="payment-history">
           <h3>Payment History</h3>
           {studentDetails.paymentHistory.length === 0 ? (
             <p>No payment records found.</p>
           ) : (
-            <table className={styles['history-table']}>
+            <table className="history-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -133,7 +145,12 @@ const PublicDashboard = () => {
                   <tr key={payment.id}>
                     <td>{formatDate(payment.date)}</td>
                     <td>{formatCurrency(payment.amount)}</td>
-                    <td>{payment.paymentMethod === 'cash' ? 'Cash' : 'Card'}</td>
+                    <td>
+                      {payment.paymentMethod === 'cash' ? 
+                        <span className="status-badge status-enrolled">Cash</span> : 
+                        <span className="status-badge status-pending">Card</span>
+                      }
+                    </td>
                     <td>{payment.notes || 'N/A'}</td>
                   </tr>
                 ))}
@@ -143,12 +160,12 @@ const PublicDashboard = () => {
         </div>
         
         {/* Fee History Section */}
-        <div className={styles['history-section']} data-testid="fee-history">
+        <div className="history-section" data-testid="fee-history">
           <h3>Fee History</h3>
           {studentDetails.feeHistory.length === 0 ? (
             <p>No fee records found.</p>
           ) : (
-            <table className={styles['history-table']}>
+            <table className="history-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -173,9 +190,13 @@ const PublicDashboard = () => {
                     return (
                       <tr key={index}>
                         <td>{formatDate(fee.date)}</td>
-                        <td>{fee.status}</td>
+                        <td>
+                          <span className={`status-badge status-${fee.status === 'absent' ? 'inactive' : 'enrolled'}`}>
+                            {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
+                          </span>
+                        </td>
                         <td>{reason || 'N/A'}</td>
-                        <td>{formatCurrency(fee.fee)}</td>
+                        <td className="negative-balance">{formatCurrency(fee.fee)}</td>
                       </tr>
                     );
                   })}
@@ -190,48 +211,49 @@ const PublicDashboard = () => {
   // Render the student list view
   const renderStudentList = () => {
     return (
-      <div className={styles['student-list-container']} data-testid="student-list">
+      <div className="student-list-container" data-testid="student-list">
         <h2>Enrolled Students</h2>
         
         {students.length === 0 ? (
           <p>No students found.</p>
         ) : (
-          <table className={styles['student-table']}>
+          <table className="student-table">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Status</th>
-                <th>Total Fees</th>
-                <th>Payments Made</th>
                 <th>Current Balance</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {students.map(student => (
-                <tr key={student.id}>
-                  <td>{student.name}</td>
-                  <td>{student.enrollmentStatus}</td>
-                  <td>{formatCurrency(student.financialSummary.totalFees)}</td>
-                  <td>{formatCurrency(student.financialSummary.totalPayments)}</td>
-                  <td className={
-                    (student.financialSummary.calculatedBalance || student.financialSummary.currentBalance) > 0 
-                      ? styles['negative-balance'] 
-                      : styles['positive-balance']
-                  }>
-                    {formatCurrency(student.financialSummary.calculatedBalance || student.financialSummary.currentBalance)}
-                  </td>
-                  <td>
-                    <button 
-                      onClick={() => handleSelectStudent(student.id)}
-                      className={styles['view-details-button']}
-                      data-testid={`view-details-${student.id}`}
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {students.map(student => {
+                const balance = student.financialSummary.calculatedBalance || student.financialSummary.currentBalance;
+                const balanceClass = getBalanceClass(balance);
+                
+                return (
+                  <tr key={student.id}>
+                    <td>{student.name}</td>
+                    <td>
+                      <span className={`status-badge status-${student.enrollmentStatus?.toLowerCase()}`}>
+                        {student.enrollmentStatus}
+                      </span>
+                    </td>
+                    <td className={balanceClass}>
+                      {formatCurrency(balance)}
+                    </td>
+                    <td>
+                      <button 
+                        onClick={() => handleSelectStudent(student.id)}
+                        className="view-details-button"
+                        data-testid={`view-details-${student.id}`}
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -240,10 +262,10 @@ const PublicDashboard = () => {
   };
 
   return (
-    <div className={styles['public-dashboard']} data-testid="public-dashboard">
-      <div className={styles['dashboard-header']}>
+    <div className="public-dashboard" data-testid="public-dashboard">
+      <div className="dashboard-header">
         <h1>Student Financial Dashboard</h1>
-        <p className={styles['dashboard-description']}>
+        <p className="dashboard-description">
           This dashboard provides information about student fees, payments, and current balances.
         </p>
       </div>
@@ -251,7 +273,8 @@ const PublicDashboard = () => {
       {error && <ErrorMessage message={error} />}
       
       {loading ? (
-        <div className={styles.loading} data-testid="loading-indicator">
+        <div className="loading" data-testid="loading-indicator">
+          <div className="spinner"></div>
           Loading data...
         </div>
       ) : (
