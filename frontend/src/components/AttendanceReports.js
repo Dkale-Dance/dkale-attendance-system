@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../services/ReportService';
 import ErrorMessage from './ErrorMessage';
-import styles from './StudentManagement.module.css'; // Reusing existing styles
+import './AttendanceReports.css'; // Using dedicated CSS file
 
 const AttendanceReports = ({ userRole }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -35,7 +35,7 @@ const AttendanceReports = ({ userRole }) => {
   // Only admin can access reports
   if (userRole !== 'admin') {
     return (
-      <div className={styles.unauthorized} data-testid="unauthorized-message">
+      <div className="unauthorized" data-testid="unauthorized-message">
         <p>You don't have permission to access attendance reports.</p>
       </div>
     );
@@ -59,78 +59,107 @@ const AttendanceReports = ({ userRole }) => {
   };
 
   return (
-    <div className={styles['student-management']} data-testid="attendance-reports">
-      <h1>Attendance Reports</h1>
+    <div className="attendance-reports" data-testid="attendance-reports">
+      <div className="attendance-header">
+        <h1>Attendance Reports</h1>
+        <p>Track student attendance rates and identify attendance issues</p>
+      </div>
       
       {error && <ErrorMessage message={error} />}
       
-      <div className={styles['dashboard-header']}>
-        <div className={styles['date-controls']}>
-          <label htmlFor="month-picker">Select Month:</label>
-          <input
-            id="month-picker"
-            type="month"
-            value={formatDateForInput(selectedMonth)}
-            onChange={handleMonthChange}
-            className={styles['date-picker']}
-            data-testid="month-picker"
-          />
-        </div>
+      <div className="date-controls">
+        <label htmlFor="month-picker">Select Month:</label>
+        <input
+          id="month-picker"
+          type="month"
+          value={formatDateForInput(selectedMonth)}
+          onChange={handleMonthChange}
+          className="date-picker"
+          data-testid="month-picker"
+        />
       </div>
       
       {loading ? (
-        <div className={styles.loading} data-testid="loading-indicator">
+        <div className="loading" data-testid="loading-indicator">
+          <div className="spinner"></div>
           Loading attendance data...
         </div>
       ) : report ? (
         <>
-          <div className={styles['report-section']} data-testid="attendance-summary">
+          <div className="report-section" data-testid="attendance-summary">
             <h2>{report.title}</h2>
             
-            <div className={styles['summary-stats']}>
-              <div className={styles['stat-card']}>
+            <div className="summary-stats">
+              <div className="stat-card">
                 <h3>Overall Attendance Rate</h3>
-                <p className={styles['stat-value']}>{formatPercentage(report.summary.attendanceRate)}</p>
+                <p className="stat-value">{formatPercentage(report.summary.attendanceRate)}</p>
               </div>
               
-              <div className={styles['stat-card']}>
+              <div className="stat-card">
                 <h3>School Days</h3>
-                <p className={styles['stat-value']}>{report.summary.totalDays}</p>
+                <p className="stat-value">{report.summary.totalDays}</p>
               </div>
               
-              <div className={styles['stat-card']}>
+              <div className="stat-card">
+                <h3>Holiday Days</h3>
+                <p className="stat-value">{report.summary.holidayCount}</p>
+              </div>
+              
+              <div className="stat-card">
+                <h3>Enrolled Students</h3>
+                <p className="stat-value">{report.summary.enrolledStudentCount}</p>
+              </div>
+              
+              <div className="stat-card">
                 <h3>Absences</h3>
-                <p className={styles['stat-value']}>{report.summary.absentCount}</p>
+                <p className="stat-value">{report.summary.absentCount}</p>
               </div>
               
-              <div className={styles['stat-card']}>
+              <div className="stat-card">
                 <h3>Medical Absences</h3>
-                <p className={styles['stat-value']}>{report.summary.medicalAbsenceCount}</p>
+                <p className="stat-value">{report.summary.medicalAbsenceCount}</p>
               </div>
             </div>
             
             {/* Attendance Issues Summary */}
-            <div className={styles['report-details']} data-testid="attendance-issues">
+            <div className="report-details" data-testid="attendance-issues">
               <h3>Common Attendance Issues</h3>
-              <div className={styles['breakdown-section']}>
+              <div className="breakdown-section">
                 <ul>
-                  <li>Late Arrivals: {report.summary.lateCount} occurrences</li>
-                  <li>No Shoes: {report.summary.noShoesCount} occurrences</li>
-                  <li>Not In Uniform: {report.summary.notInUniformCount} occurrences</li>
+                  <li>
+                    <span className="issue-name">Late Arrivals</span>
+                    <span className="issue-count">{report.summary.lateCount}</span>
+                  </li>
+                  <li>
+                    <span className="issue-name">No Shoes</span>
+                    <span className="issue-count">{report.summary.noShoesCount}</span>
+                  </li>
+                  <li>
+                    <span className="issue-name">Not In Uniform</span>
+                    <span className="issue-count">{report.summary.notInUniformCount}</span>
+                  </li>
                 </ul>
               </div>
             </div>
             
             {/* Per-Student Attendance Table */}
-            <div className={styles['report-details']} data-testid="student-attendance">
+            <div className="report-details" data-testid="student-attendance">
               <h3>Student Attendance Rates</h3>
-              <table className={styles['student-table']}>
+              <div className="info-banner">
+                {report.summary.holidayCount > 0 && (
+                  <p>• Holidays ({report.summary.holidayCount} days) are not counted in attendance rates calculations.</p>
+                )}
+                <p>• Medical absences are counted as absences but are considered excused.</p>
+              </div>
+              <table className="student-table">
                 <thead>
                   <tr>
                     <th>Name</th>
+                    <th>Status</th>
                     <th>Attendance Rate</th>
                     <th>Present Days</th>
                     <th>Absent Days</th>
+                    <th>Medical Absences</th>
                     <th>Late Arrivals</th>
                   </tr>
                 </thead>
@@ -142,32 +171,55 @@ const AttendanceReports = ({ userRole }) => {
                       const nameB = b[1].studentName.toLowerCase();
                       return nameA.localeCompare(nameB);
                     }) // Sort alphabetically by student name
-                    .map(([studentId, stats]) => (
-                      <tr key={studentId}>
-                        <td>{stats.studentName}</td>
-                        <td 
-                          className={
-                            stats.attendanceRate < 70 
-                              ? styles['low-attendance'] 
-                              : stats.attendanceRate >= 95 
-                                ? styles['perfect-attendance'] 
-                                : ''
-                          }
-                        >
-                          {formatPercentage(stats.attendanceRate)}
-                        </td>
-                        <td>{stats.present}</td>
-                        <td>{stats.absent}</td>
-                        <td>{stats.late}</td>
-                      </tr>
-                    ))}
+                    .map(([studentId, stats]) => {
+                      // Determine attendance rate class and styling
+                      let attendanceClass = '';
+                      let fillClass = '';
+                      let fillWidth = `${stats.attendanceRate}%`;
+                      
+                      if (stats.attendanceRate < 70) {
+                        attendanceClass = 'low-attendance';
+                        fillClass = 'fill-low';
+                      } else if (stats.attendanceRate >= 95) {
+                        attendanceClass = 'perfect-attendance';
+                        fillClass = 'fill-high';
+                      } else {
+                        fillClass = 'fill-medium';
+                      }
+                      
+                      return (
+                        <tr key={studentId}>
+                          <td className="student-name">{stats.studentName}</td>
+                          <td>
+                            <span className={`status-badge ${stats.enrollmentStatus === 'Enrolled' ? 'status-enrolled' : 'status-pending'}`}>
+                              {stats.enrollmentStatus}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="attendance-indicator">
+                              <span className={attendanceClass}>{formatPercentage(stats.attendanceRate)}</span>
+                              <div className="attendance-bar">
+                                <div 
+                                  className={`attendance-fill ${fillClass}`} 
+                                  style={{ width: fillWidth }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{stats.present}</td>
+                          <td>{stats.absent}</td>
+                          <td>{stats.medicalAbsence}</td>
+                          <td>{stats.late}</td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
           </div>
         </>
       ) : (
-        <div className={styles['no-data']} data-testid="no-data">
+        <div className="no-data" data-testid="no-data">
           <p>No attendance data available for the selected month.</p>
         </div>
       )}

@@ -693,10 +693,31 @@ export default class ReportService {
       const monthlyAttendance = await this.reportRepository.getMonthlyAttendance(monthDate);
       
       // Get all students for reference
-      const students = await this.studentRepository.getAllStudents();
+      const allStudents = await this.studentRepository.getAllStudents();
       
-      // Calculate total attendance days in the month
-      const totalDays = monthlyAttendance.length;
+      // Filter for only enrolled or pending payment students
+      const enrolledStudents = allStudents.filter(student => 
+        student.enrollmentStatus === 'Enrolled' || student.enrollmentStatus === 'Pending Payment'
+      );
+      
+      // Identify school days (exclude holidays)
+      // A day is considered a holiday if any student has the holiday status
+      const schoolDays = [];
+      const holidayDays = [];
+      
+      for (const attendanceDay of monthlyAttendance) {
+        const records = attendanceDay.records || {};
+        const isHoliday = Object.values(records).some(record => record.status === 'holiday');
+        
+        if (isHoliday) {
+          holidayDays.push(attendanceDay);
+        } else {
+          schoolDays.push(attendanceDay);
+        }
+      }
+      
+      // Calculate total attendance days in the month (excluding holidays)
+      const totalDays = schoolDays.length;
       
       // Initialize attendance statistics
       const attendanceStats = {
@@ -709,11 +730,12 @@ export default class ReportService {
         noShoesCount: 0,
         notInUniformCount: 0,
         attendanceRate: 0,
-        byStudent: {}
+        byStudent: {},
+        enrolledStudentCount: enrolledStudents.length
       };
       
-      // Initialize student attendance records
-      students.forEach(student => {
+      // Initialize student attendance records for enrolled students only
+      enrolledStudents.forEach(student => {
         attendanceStats.byStudent[student.id] = {
           studentName: `${student.firstName} ${student.lastName}`,
           present: 0,
@@ -723,15 +745,19 @@ export default class ReportService {
           late: 0,
           noShoes: 0,
           notInUniform: 0,
-          attendanceRate: 0
+          attendanceRate: 0,
+          enrollmentStatus: student.enrollmentStatus
         };
       });
       
-      // Count total possible student attendance days
-      const totalPossibleAttendanceDays = totalDays * students.length;
+      // Count total possible student attendance days (only for enrolled students on school days)
+      const totalPossibleAttendanceDays = totalDays * enrolledStudents.length;
       
-      // Process each attendance day
-      for (const attendanceDay of monthlyAttendance) {
+      // Track the number of holidays
+      attendanceStats.holidayCount = holidayDays.length;
+      
+      // Process only school days (non-holiday days)
+      for (const attendanceDay of schoolDays) {
         const records = attendanceDay.records;
         
         // Process each student's attendance for this day
@@ -739,28 +765,21 @@ export default class ReportService {
           const status = attendance.status;
           const attributes = attendance.attributes || {};
           
+          // Skip students who aren't enrolled (not in our byStudent object)
+          if (!attendanceStats.byStudent[studentId]) continue;
+          
           // Update overall status counts
           if (status === 'present') {
             attendanceStats.presentCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].present++;
-            }
+            attendanceStats.byStudent[studentId].present++;
           } else if (status === 'absent') {
             attendanceStats.absentCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].absent++;
-            }
+            attendanceStats.byStudent[studentId].absent++;
           } else if (status === 'medicalAbsence') {
             attendanceStats.medicalAbsenceCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].medicalAbsence++;
-            }
-          } else if (status === 'holiday') {
-            attendanceStats.holidayCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].holiday++;
-            }
+            attendanceStats.byStudent[studentId].medicalAbsence++;
           }
+          // Holiday status is not counted for school days
           
           // Update attribute counts
           if (attributes.late) {
@@ -792,10 +811,13 @@ export default class ReportService {
       }
       
       // Calculate attendance rate for each student
+      // Rate = (present days / (total school days - holiday days)) * 100
       for (const studentId in attendanceStats.byStudent) {
         const studentStats = attendanceStats.byStudent[studentId];
         if (totalDays > 0) {
-          studentStats.attendanceRate = (studentStats.present / totalDays) * 100;
+          // Attendance rate is based only on school days (excluding holidays)
+          const expectedAttendanceDays = totalDays;
+          studentStats.attendanceRate = (studentStats.present / expectedAttendanceDays) * 100;
         }
       }
       
