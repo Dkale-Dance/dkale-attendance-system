@@ -957,8 +957,9 @@ export default class ReportService {
       const studentFinancialSummaries = [];
       
       for (const student of students) {
-        // Only include active students
-        if (student.enrollmentStatus !== 'Removed') {
+        // Only include enrolled students or those with pending payment
+        // Excludes "Inactive" and "Removed" students
+        if (student.enrollmentStatus === 'Enrolled' || student.enrollmentStatus === 'Pending Payment') {
           // Get payment history - needed for tests
           const paymentHistory = await this.reportRepository.getStudentPaymentHistory(student.id);
           

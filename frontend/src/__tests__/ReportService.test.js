@@ -57,6 +57,7 @@ describe("ReportService", () => {
       lastName: "Doe",
       email: "john.doe@example.com",
       role: "student",
+      enrollmentStatus: "Enrolled",
       balance: 500
     },
     {
@@ -65,6 +66,7 @@ describe("ReportService", () => {
       lastName: "Smith",
       email: "jane.smith@example.com",
       role: "student",
+      enrollmentStatus: "Pending Payment",
       balance: 200
     }
   ];
