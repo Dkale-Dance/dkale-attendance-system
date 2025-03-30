@@ -1,0 +1,1 @@
+- Always use SOLID principles and TDD.
