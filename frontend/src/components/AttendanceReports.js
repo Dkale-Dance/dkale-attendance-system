@@ -101,6 +101,11 @@ const AttendanceReports = ({ userRole }) => {
               </div>
               
               <div className="stat-card">
+                <h3>Holiday Days</h3>
+                <p className="stat-value">{report.summary.holidayCount}</p>
+              </div>
+              
+              <div className="stat-card">
                 <h3>Enrolled Students</h3>
                 <p className="stat-value">{report.summary.enrolledStudentCount}</p>
               </div>
@@ -140,6 +145,11 @@ const AttendanceReports = ({ userRole }) => {
             {/* Per-Student Attendance Table */}
             <div className="report-details" data-testid="student-attendance">
               <h3>Student Attendance Rates</h3>
+              {report.summary.holidayCount > 0 && (
+                <div className="info-banner">
+                  <p>Note: Holidays ({report.summary.holidayCount} days) are not counted in attendance rates calculations.</p>
+                </div>
+              )}
               <table className="student-table">
                 <thead>
                   <tr>

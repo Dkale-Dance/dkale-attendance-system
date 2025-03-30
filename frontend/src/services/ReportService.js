@@ -700,8 +700,24 @@ export default class ReportService {
         student.enrollmentStatus === 'Enrolled' || student.enrollmentStatus === 'Pending Payment'
       );
       
-      // Calculate total attendance days in the month
-      const totalDays = monthlyAttendance.length;
+      // Identify school days (exclude holidays)
+      // A day is considered a holiday if any student has the holiday status
+      const schoolDays = [];
+      const holidayDays = [];
+      
+      for (const attendanceDay of monthlyAttendance) {
+        const records = attendanceDay.records || {};
+        const isHoliday = Object.values(records).some(record => record.status === 'holiday');
+        
+        if (isHoliday) {
+          holidayDays.push(attendanceDay);
+        } else {
+          schoolDays.push(attendanceDay);
+        }
+      }
+      
+      // Calculate total attendance days in the month (excluding holidays)
+      const totalDays = schoolDays.length;
       
       // Initialize attendance statistics
       const attendanceStats = {
@@ -734,11 +750,14 @@ export default class ReportService {
         };
       });
       
-      // Count total possible student attendance days (only for enrolled students)
+      // Count total possible student attendance days (only for enrolled students on school days)
       const totalPossibleAttendanceDays = totalDays * enrolledStudents.length;
       
-      // Process each attendance day
-      for (const attendanceDay of monthlyAttendance) {
+      // Track the number of holidays
+      attendanceStats.holidayCount = holidayDays.length;
+      
+      // Process only school days (non-holiday days)
+      for (const attendanceDay of schoolDays) {
         const records = attendanceDay.records;
         
         // Process each student's attendance for this day
@@ -746,28 +765,21 @@ export default class ReportService {
           const status = attendance.status;
           const attributes = attendance.attributes || {};
           
+          // Skip students who aren't enrolled (not in our byStudent object)
+          if (!attendanceStats.byStudent[studentId]) continue;
+          
           // Update overall status counts
           if (status === 'present') {
             attendanceStats.presentCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].present++;
-            }
+            attendanceStats.byStudent[studentId].present++;
           } else if (status === 'absent') {
             attendanceStats.absentCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].absent++;
-            }
+            attendanceStats.byStudent[studentId].absent++;
           } else if (status === 'medicalAbsence') {
             attendanceStats.medicalAbsenceCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].medicalAbsence++;
-            }
-          } else if (status === 'holiday') {
-            attendanceStats.holidayCount++;
-            if (attendanceStats.byStudent[studentId]) {
-              attendanceStats.byStudent[studentId].holiday++;
-            }
+            attendanceStats.byStudent[studentId].medicalAbsence++;
           }
+          // Holiday status is not counted for school days
           
           // Update attribute counts
           if (attributes.late) {
@@ -799,10 +811,13 @@ export default class ReportService {
       }
       
       // Calculate attendance rate for each student
+      // Rate = (present days / (total school days - holiday days)) * 100
       for (const studentId in attendanceStats.byStudent) {
         const studentStats = attendanceStats.byStudent[studentId];
         if (totalDays > 0) {
-          studentStats.attendanceRate = (studentStats.present / totalDays) * 100;
+          // Attendance rate is based only on school days (excluding holidays)
+          const expectedAttendanceDays = totalDays;
+          studentStats.attendanceRate = (studentStats.present / expectedAttendanceDays) * 100;
         }
       }
       

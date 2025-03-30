@@ -123,6 +123,20 @@
   margin: 0;
 }
 
+.info-banner {
+  background-color: #e7f3ff;
+  border-left: 4px solid #007bff;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.info-banner p {
+  margin: 0;
+  color: #0056b3;
+  font-size: 0.95rem;
+}
+
 .breakdown-section li {
   flex: 1;
   min-width: 220px;
