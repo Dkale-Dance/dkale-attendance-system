@@ -132,9 +132,14 @@
 }
 
 .info-banner p {
-  margin: 0;
+  margin: 0 0 8px 0;
   color: #0056b3;
   font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.info-banner p:last-child {
+  margin-bottom: 0;
 }
 
 .breakdown-section li {

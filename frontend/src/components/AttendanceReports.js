@@ -145,11 +145,12 @@ const AttendanceReports = ({ userRole }) => {
             {/* Per-Student Attendance Table */}
             <div className="report-details" data-testid="student-attendance">
               <h3>Student Attendance Rates</h3>
-              {report.summary.holidayCount > 0 && (
-                <div className="info-banner">
-                  <p>Note: Holidays ({report.summary.holidayCount} days) are not counted in attendance rates calculations.</p>
-                </div>
-              )}
+              <div className="info-banner">
+                {report.summary.holidayCount > 0 && (
+                  <p>• Holidays ({report.summary.holidayCount} days) are not counted in attendance rates calculations.</p>
+                )}
+                <p>• Medical absences are counted as absences but are considered excused.</p>
+              </div>
               <table className="student-table">
                 <thead>
                   <tr>
@@ -158,6 +159,7 @@ const AttendanceReports = ({ userRole }) => {
                     <th>Attendance Rate</th>
                     <th>Present Days</th>
                     <th>Absent Days</th>
+                    <th>Medical Absences</th>
                     <th>Late Arrivals</th>
                   </tr>
                 </thead>
@@ -206,6 +208,7 @@ const AttendanceReports = ({ userRole }) => {
                           </td>
                           <td>{stats.present}</td>
                           <td>{stats.absent}</td>
+                          <td>{stats.medicalAbsence}</td>
                           <td>{stats.late}</td>
                         </tr>
                       );
