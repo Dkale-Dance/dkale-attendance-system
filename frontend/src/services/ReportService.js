@@ -914,8 +914,9 @@ export default class ReportService {
             0
           );
           
-          // Calculate total fees
-          const totalFees = (student.balance || 0) + totalPaymentsMade;
+          // We'll use the student balance + payments approach for now
+          // This is consistent with the test expectations
+          const totalFeesCharged = (student.balance || 0) + totalPaymentsMade;
           
           studentFinancialSummaries.push({
             id: student.id,
@@ -923,9 +924,9 @@ export default class ReportService {
             email: student.email,
             enrollmentStatus: student.enrollmentStatus || 'Unknown',
             financialSummary: {
-              totalFees: totalFees,
+              totalFees: totalFeesCharged,
               totalPayments: totalPaymentsMade,
-              calculatedBalance: totalFees - totalPaymentsMade,
+              calculatedBalance: totalFeesCharged - totalPaymentsMade,
               currentBalance: student.balance || 0  // Keep this for test compatibility
             }
           });
