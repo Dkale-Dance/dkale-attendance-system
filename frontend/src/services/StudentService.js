@@ -58,6 +58,47 @@ export default class StudentService {
     const students = await this.studentRepository.getAllStudents();
     return sortStudentsByFirstName(students);
   }
+  
+  /**
+   * Get all students with their accurately calculated balances
+   * @returns {Promise<Array>} Array of students with calculated balance information
+   */
+  async getAllStudentsWithBalances() {
+    try {
+      // Import the reportService
+      const { reportService } = await import("./ReportService");
+      
+      // Get all students
+      const students = await this.getAllStudents();
+      
+      // Calculate balances for each student
+      const studentsWithBalances = await Promise.all(
+        students.map(async (student) => {
+          try {
+            // Get calculated balance info for this student
+            const balanceInfo = await reportService.calculateStudentBalance(student.id);
+            
+            // Add calculated balance to student object
+            return {
+              ...student,
+              calculatedBalance: balanceInfo.calculatedBalance,
+              totalFees: balanceInfo.totalFeesCharged,
+              totalPayments: balanceInfo.totalPaymentsMade
+            };
+          } catch (error) {
+            console.error(`Error calculating balance for student ${student.id}:`, error);
+            // Return student without calculated balance
+            return student;
+          }
+        })
+      );
+      
+      return studentsWithBalances;
+    } catch (error) {
+      console.error("Error getting students with balances:", error);
+      throw new Error(`Failed to get students with balances: ${error.message}`);
+    }
+  }
 
   async addBalance(studentId, amount) {
     if (amount <= 0) {

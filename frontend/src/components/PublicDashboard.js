@@ -104,11 +104,11 @@ const PublicDashboard = () => {
           <div className={styles['summary-item']}>
             <h3>Current Balance</h3>
             <p className={
-              studentDetails.financialSummary.currentBalance > 0 
+              (studentDetails.financialSummary.calculatedBalance || studentDetails.financialSummary.currentBalance) > 0 
                 ? styles['negative-balance'] 
                 : styles['positive-balance']
             }>
-              {formatCurrency(studentDetails.financialSummary.currentBalance)}
+              {formatCurrency(studentDetails.financialSummary.calculatedBalance || studentDetails.financialSummary.currentBalance)}
             </p>
           </div>
         </div>
@@ -215,11 +215,11 @@ const PublicDashboard = () => {
                   <td>{formatCurrency(student.financialSummary.totalFees)}</td>
                   <td>{formatCurrency(student.financialSummary.totalPayments)}</td>
                   <td className={
-                    student.financialSummary.currentBalance > 0 
+                    (student.financialSummary.calculatedBalance || student.financialSummary.currentBalance) > 0 
                       ? styles['negative-balance'] 
                       : styles['positive-balance']
                   }>
-                    {formatCurrency(student.financialSummary.currentBalance)}
+                    {formatCurrency(student.financialSummary.calculatedBalance || student.financialSummary.currentBalance)}
                   </td>
                   <td>
                     <button 

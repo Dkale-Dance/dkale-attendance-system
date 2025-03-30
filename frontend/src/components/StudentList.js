@@ -18,9 +18,32 @@ const StudentList = ({ onSelectStudent }) => {
       let studentData;
       
       if (filterStatus === 'All') {
-        studentData = await studentService.getAllStudents();
+        // Use the new method that provides calculated balances
+        studentData = await studentService.getAllStudentsWithBalances();
       } else {
-        studentData = await studentService.getStudentsByStatus(filterStatus);
+        // For filtered views, we still need to get with balances
+        const filteredStudents = await studentService.getStudentsByStatus(filterStatus);
+        
+        // Now calculate balances for these students
+        studentData = await Promise.all(
+          filteredStudents.map(async (student) => {
+            try {
+              // Use ReportService directly to calculate accurate balances
+              const { reportService } = await import('../services/ReportService');
+              const balanceInfo = await reportService.calculateStudentBalance(student.id);
+              
+              return {
+                ...student,
+                calculatedBalance: balanceInfo.calculatedBalance,
+                totalFees: balanceInfo.totalFeesCharged,
+                totalPayments: balanceInfo.totalPaymentsMade
+              };
+            } catch (error) {
+              console.error(`Error calculating balance for student ${student.id}:`, error);
+              return student;
+            }
+          })
+        );
       }
       
       setStudents(studentData || []);
@@ -120,7 +143,11 @@ const StudentList = ({ onSelectStudent }) => {
                     <option value="Removed">Removed</option>
                   </select>
                 </td>
-                <td>${(student.balance || 0).toFixed(2)}</td>
+                <td>
+                  ${student.calculatedBalance !== undefined 
+                    ? student.calculatedBalance.toFixed(2) 
+                    : (student.balance || 0).toFixed(2)}
+                </td>
                 <td className={styles['button-container']}>
                   {onSelectStudent && (
                     <button
@@ -133,8 +160,14 @@ const StudentList = ({ onSelectStudent }) => {
                   )}
                   <button 
                     onClick={() => handleRemoveStudent(student.id)}
-                    disabled={(student.balance || 0) > 0}
-                    title={student.balance > 0 ? "Cannot remove student with balance" : "Remove student"}
+                    disabled={(student.calculatedBalance !== undefined 
+                      ? student.calculatedBalance > 0 
+                      : (student.balance || 0) > 0)}
+                    title={(student.calculatedBalance !== undefined 
+                      ? student.calculatedBalance > 0 
+                      : (student.balance || 0) > 0)
+                      ? "Cannot remove student with balance" 
+                      : "Remove student"}
                     data-testid={`remove-button-${student.id}`}
                   >
                     Remove

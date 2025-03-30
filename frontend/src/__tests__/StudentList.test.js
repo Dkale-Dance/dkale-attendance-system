@@ -9,9 +9,21 @@ import { studentService } from '../services/StudentService';
 jest.mock('../services/StudentService', () => ({
   studentService: {
     getAllStudents: jest.fn(),
+    getAllStudentsWithBalances: jest.fn(), // Add the new method
     getStudentsByStatus: jest.fn(),
     changeEnrollmentStatus: jest.fn(),
     removeStudent: jest.fn()
+  }
+}));
+
+// Mock the report service import
+jest.mock('../services/ReportService', () => ({
+  reportService: {
+    calculateStudentBalance: jest.fn().mockResolvedValue({
+      totalFeesCharged: 0,
+      totalPaymentsMade: 0,
+      calculatedBalance: 0
+    })
   }
 }));
 
@@ -39,6 +51,17 @@ describe('StudentList', () => {
     jest.clearAllMocks();
     // Default mock implementation
     studentService.getAllStudents.mockResolvedValue(mockStudents);
+    
+    // Mock implementation for the new method
+    studentService.getAllStudentsWithBalances.mockResolvedValue(
+      mockStudents.map(student => ({
+        ...student,
+        calculatedBalance: student.balance,
+        totalFees: student.balance,
+        totalPayments: 0
+      }))
+    );
+    
     studentService.getStudentsByStatus.mockResolvedValue([mockStudents[0]]);
   });
 
@@ -60,7 +83,9 @@ describe('StudentList', () => {
   });
 
   it('renders empty state when no students', async () => {
+    // Mock both methods to return empty arrays
     studentService.getAllStudents.mockResolvedValueOnce([]);
+    studentService.getAllStudentsWithBalances.mockResolvedValueOnce([]);
     
     render(<StudentList />);
     
@@ -68,8 +93,11 @@ describe('StudentList', () => {
       expect(screen.queryByTestId('loading-message')).not.toBeInTheDocument();
     });
     
-    expect(screen.getByTestId('no-students-message')).toBeInTheDocument();
-    expect(screen.queryByTestId('students-table')).not.toBeInTheDocument();
+    // We also need to wait for error to be displayed due to async imports
+    await waitFor(() => {
+      expect(screen.getByTestId('no-students-message')).toBeInTheDocument();
+      expect(screen.queryByTestId('students-table')).not.toBeInTheDocument();
+    });
   });
 
   it('filters students by status', async () => {
@@ -141,8 +169,15 @@ describe('StudentList', () => {
     // Mock successful removal
     studentService.removeStudent.mockResolvedValue(true);
     
-    // Mock successful fetchStudents after removal
-    studentService.getAllStudents.mockResolvedValue([mockStudents[1]]);
+    // Mock successful fetchStudents after removal with the new method
+    studentService.getAllStudentsWithBalances.mockResolvedValue([
+      {
+        ...mockStudents[1],
+        calculatedBalance: mockStudents[1].balance,
+        totalFees: mockStudents[1].balance,
+        totalPayments: 0
+      }
+    ]);
     
     // Click remove button for first student (zero balance)
     fireEvent.click(screen.getByTestId('remove-button-student1'));
