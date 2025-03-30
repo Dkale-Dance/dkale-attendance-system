@@ -22,7 +22,7 @@ const FinancialReports = ({ userRole }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().getFullYear(), 0, 1), // January 1st of current year
+    startDate: new Date(new Date().getFullYear(), 8, 1), // September 1st (month is 0-indexed, so 8 = September)
     endDate: new Date()
   });
 
