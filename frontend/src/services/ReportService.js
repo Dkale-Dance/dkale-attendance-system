@@ -879,7 +879,8 @@ export default class ReportService {
         financialSummary: {
           totalFeesCharged,
           totalPaymentsMade,
-          currentBalance: student.balance || 0
+          calculatedBalance: totalFeesCharged - totalPaymentsMade,
+          currentBalance: student.balance || 0  // Keep this for test compatibility
         },
         paymentHistory,
         feeHistory
@@ -913,15 +914,19 @@ export default class ReportService {
             0
           );
           
+          // Calculate total fees
+          const totalFees = (student.balance || 0) + totalPaymentsMade;
+          
           studentFinancialSummaries.push({
             id: student.id,
             name: `${student.firstName} ${student.lastName}`,
             email: student.email,
             enrollmentStatus: student.enrollmentStatus || 'Unknown',
             financialSummary: {
-              totalFees: (student.balance || 0) + totalPaymentsMade,
+              totalFees: totalFees,
               totalPayments: totalPaymentsMade,
-              currentBalance: student.balance || 0
+              calculatedBalance: totalFees - totalPaymentsMade,
+              currentBalance: student.balance || 0  // Keep this for test compatibility
             }
           });
         }
