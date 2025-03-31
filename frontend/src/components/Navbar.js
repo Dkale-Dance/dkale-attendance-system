@@ -1,25 +1,13 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import './Navbar.css';
 
 // NavLink component - Single Responsibility Principle
-const NavLink = ({ label, onClick, className = '', to = null }) => {
-  // Use either Link or div based on whether a 'to' prop is provided
-  if (to) {
-    return (
-      <Link to={to} className={`nav-link ${className}`}>
-        {label}
-      </Link>
-    );
-  }
-  
+const NavLink = ({ label, to, className = '' }) => {
   return (
-    <div 
-      className={`nav-link ${className}`} 
-      onClick={onClick}
-    >
+    <Link to={to} className={`nav-link ${className}`}>
       {label}
-    </div>
+    </Link>
   );
 };
 
@@ -31,7 +19,7 @@ const UserInfo = ({ user }) => (
 );
 
 // NavigationLinks component - Single Responsibility Principle & Open/Closed Principle
-const NavigationLinks = ({ userRole, setView, isExpanded }) => {
+const NavigationLinks = ({ userRole, isExpanded }) => {
   const links = [];
 
   // Home link for all authenticated users
@@ -39,7 +27,7 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
     <NavLink 
       key="home" 
       label="Home" 
-      onClick={() => setView('default')} 
+      to="/"
     />
   );
 
@@ -49,7 +37,7 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
       <NavLink 
         key="profile" 
         label="Profile" 
-        onClick={() => setView('profile')} 
+        to="/profile"
       />
     );
   }
@@ -59,7 +47,7 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
       <NavLink 
         key="management" 
         label="Manage Students" 
-        onClick={() => setView('management')} 
+        to="/manage-students"
       />
     );
     
@@ -67,7 +55,7 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
       <NavLink 
         key="attendance" 
         label="Attendance" 
-        onClick={() => setView('attendance')} 
+        to="/attendance"
       />
     );
     
@@ -75,16 +63,15 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
       <NavLink 
         key="payments" 
         label="Payments" 
-        onClick={() => setView('payments')} 
+        to="/payments"
       />
     );
     
-    // New report links for admins
     links.push(
       <NavLink 
         key="financial-reports" 
         label="Financial Reports" 
-        onClick={() => setView('financial-reports')} 
+        to="/financial-reports"
       />
     );
     
@@ -92,7 +79,7 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
       <NavLink 
         key="attendance-reports" 
         label="Attendance Reports" 
-        onClick={() => setView('attendance-reports')} 
+        to="/attendance-reports"
       />
     );
   }
@@ -102,7 +89,7 @@ const NavigationLinks = ({ userRole, setView, isExpanded }) => {
     <NavLink 
       key="public-dashboard" 
       label="Public Dashboard" 
-      to="/public-dashboard" 
+      to="/public-dashboard"
     />
   );
 
@@ -153,30 +140,30 @@ const PublicNavbar = ({ isExpanded, toggleNavbar }) => (
       <NavLink 
         key="login" 
         label="Login" 
-        to="/" 
+        to="/"
       />
       <NavLink 
         key="public-dashboard" 
         label="Public Dashboard" 
-        to="/public-dashboard" 
+        to="/public-dashboard"
       />
     </div>
   </div>
 );
 
 // Navbar component - Composition over inheritance
-const Navbar = ({ user, userRole, onLogout, setView }) => {
+const Navbar = ({ user, userRole, onLogout }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const location = useLocation();
 
   const toggleNavbar = () => {
     setIsExpanded(!isExpanded);
   };
   
   // Determine if we're on the public dashboard page
-  const isPublicDashboard = window.location.pathname === '/public-dashboard';
+  const isPublicDashboard = location.pathname === '/public-dashboard';
 
-  // If user is not authenticated and we're not on the public dashboard, don't render the navbar
-  if (!user && !isPublicDashboard) return null;
+  // Always show a navbar, but the content will vary based on authentication
 
   return (
     <nav className="navbar">
@@ -198,9 +185,8 @@ const Navbar = ({ user, userRole, onLogout, setView }) => {
           </div>
 
           <NavigationLinks 
-            userRole={userRole} 
-            setView={setView} 
-            isExpanded={isExpanded} 
+            userRole={userRole}
+            isExpanded={isExpanded}
           />
 
           <UserSection user={user} onLogout={onLogout} />

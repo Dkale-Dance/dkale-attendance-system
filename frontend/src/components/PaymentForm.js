@@ -6,7 +6,7 @@ import ErrorMessage from './ErrorMessage';
 import { auth } from '../lib/firebase/config/config';
 import styles from './StudentForm.module.css'; // Reusing the existing form styles
 
-const PaymentForm = ({ onSuccess, onCancel }) => {
+const PaymentForm = ({ onSuccess, onCancel, pendingPayment }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,7 +17,9 @@ const PaymentForm = ({ onSuccess, onCancel }) => {
     amount: '',
     date: new Date().toISOString().split('T')[0],
     paymentMethod: 'cash',
-    notes: ''
+    notes: '',
+    feeId: null,
+    feeDate: null
   });
 
   // Fetch students when component mounts
@@ -37,6 +39,26 @@ const PaymentForm = ({ onSuccess, onCancel }) => {
 
     loadStudents();
   }, []);
+  
+  // Update form data when pendingPayment changes
+  useEffect(() => {
+    if (pendingPayment && students.length > 0) {
+      // Make sure the student exists in our list
+      const studentExists = students.some(s => s.id === pendingPayment.studentId);
+      
+      if (studentExists) {
+        // Update form data with the pending payment using functional update to avoid dependency
+        setFormData(prevFormData => ({
+          ...prevFormData,
+          studentId: pendingPayment.studentId,
+          amount: pendingPayment.amount,
+          notes: pendingPayment.notes || prevFormData.notes,
+          feeId: pendingPayment.feeId,
+          feeDate: pendingPayment.feeDate
+        }));
+      }
+    }
+  }, [pendingPayment, students]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +84,10 @@ const PaymentForm = ({ onSuccess, onCancel }) => {
       const paymentData = {
         ...formData,
         adminId,
-        date: new Date(formData.date)
+        date: new Date(formData.date),
+        // Include the feeId if it exists
+        feeId: formData.feeId || null,
+        feeDate: formData.feeDate || null
       };
       
       // Record the payment

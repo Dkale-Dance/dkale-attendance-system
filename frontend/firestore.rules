@@ -117,7 +117,8 @@ service cloud.firestore {
       // Read access
       allow read: if isSuperAdmin() || 
                  isAdmin() || 
-                 isCurrentUser(userId);
+                 isCurrentUser(userId) ||
+                 true; // Allow public read access for public dashboard
       
       // Write access
       allow create: if isSuperAdmin() || 
@@ -137,10 +138,9 @@ service cloud.firestore {
     // Attendance collection rules
     match /attendance/{date} {
       // Read access
-      allow read: if isAdminOrSuperAdmin();
-      
-      // Students can only read attendance records containing their ID
-      allow read: if isStudent() && resource.data.keys().hasAny([request.auth.uid]);
+      allow read: if isAdminOrSuperAdmin() ||
+                   isStudent() && resource.data.keys().hasAny([request.auth.uid]) ||
+                   true; // Allow public read access for public dashboard
       
       // Write access - only admins can modify attendance
       allow write: if isAdminOrSuperAdmin() && isValidAttendanceData();
@@ -149,10 +149,9 @@ service cloud.firestore {
     // Payments collection rules
     match /payments/{paymentId} {
       // Read access
-      allow read: if isAdminOrSuperAdmin();
-      
-      // Students can only read their own payment records
-      allow read: if isStudent() && resource.data.studentId == request.auth.uid;
+      allow read: if isAdminOrSuperAdmin() ||
+                   isStudent() && resource.data.studentId == request.auth.uid ||
+                   true; // Allow public read access for public dashboard
       
       // Write access - only admins can modify payments
       allow write: if isAdminOrSuperAdmin() && isValidPaymentData();

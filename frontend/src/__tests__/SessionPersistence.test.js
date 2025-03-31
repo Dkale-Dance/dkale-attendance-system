@@ -14,7 +14,9 @@ jest.mock('react-router-dom', () => ({
       {children}
     </a>
   ),
-  useNavigate: () => jest.fn()
+  Navigate: ({ to }) => <div>Navigate to {to}</div>,
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/' })
 }));
 
 // Mock services
@@ -41,6 +43,37 @@ jest.mock('../services/StudentService', () => ({
     updateStudent: jest.fn()
   }
 }));
+
+// Mock components
+jest.mock('../components/StudentManagement', () => {
+  return function MockStudentManagement() {
+    return <div>Student Management</div>;
+  };
+});
+
+jest.mock('../components/AttendanceDashboard', () => {
+  return function MockAttendanceDashboard() {
+    return <div>Attendance Dashboard</div>;
+  };
+});
+
+jest.mock('../components/PaymentDashboard', () => {
+  return function MockPaymentDashboard() {
+    return <div>Payment Dashboard</div>;
+  };
+});
+
+jest.mock('../components/FinancialReports', () => {
+  return function MockFinancialReports() {
+    return <div>Financial Reports</div>;
+  };
+});
+
+jest.mock('../components/AttendanceReports', () => {
+  return function MockAttendanceReports() {
+    return <div>Attendance Reports</div>;
+  };
+});
 
 // Mock the AttendanceService
 jest.mock('../services/AttendanceService', () => ({

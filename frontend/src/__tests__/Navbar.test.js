@@ -2,14 +2,18 @@ import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import Navbar from '../components/Navbar';
 
-// Mock react-router-dom
+// Create a centralized mock for react-router-dom
+const mockUseLocation = jest.fn();
+mockUseLocation.mockReturnValue({ pathname: '/' });
+
 jest.mock('react-router-dom', () => ({
   Link: ({ children, to, className, onClick }) => (
     <a href={to} className={className} onClick={onClick}>
       {children}
     </a>
   ),
-  useNavigate: () => jest.fn()
+  useNavigate: () => jest.fn(),
+  useLocation: () => mockUseLocation()
 }));
 
 describe('Navbar Component', () => {
@@ -18,15 +22,34 @@ describe('Navbar Component', () => {
   };
   const mockUserRole = 'student';
   const mockLogout = jest.fn();
-  const mockSetView = jest.fn();
-
-  test('should not render when user is not authenticated', () => {
-    const { container } = render(<Navbar user={null} userRole={null} onLogout={mockLogout} setView={mockSetView} />);
-    expect(container.firstChild).toBeNull();
+  
+  beforeEach(() => {
+    // Reset all mocks before each test
+    jest.clearAllMocks();
+    mockUseLocation.mockReturnValue({ pathname: '/' });
+  });
+  
+  test('should render public navbar when user is not authenticated on homepage', () => {
+    render(<Navbar user={null} userRole={null} onLogout={mockLogout} />);
+    
+    // Should show the brand name and login link
+    expect(screen.getByText('Dkale Dance')).toBeInTheDocument();
+    expect(screen.getByText('Login')).toBeInTheDocument();
+  });
+  
+  test('should render public navbar when on public dashboard without authentication', () => {
+    // Mock location to be on public dashboard
+    mockUseLocation.mockReturnValue({ pathname: '/public-dashboard' });
+    
+    render(<Navbar user={null} userRole={null} onLogout={mockLogout} />);
+    
+    // Public navbar should be visible with login link
+    expect(screen.getByText('Login')).toBeInTheDocument();
+    expect(screen.getByText('Public Dashboard')).toBeInTheDocument();
   });
 
   test('should render when user is authenticated', () => {
-    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} setView={mockSetView} />);
+    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} />);
     
     expect(screen.getByText(mockUser.email)).toBeInTheDocument();
     // No longer showing role label
@@ -34,7 +57,7 @@ describe('Navbar Component', () => {
   });
 
   test('should show appropriate navigation links based on user role (student)', () => {
-    render(<Navbar user={mockUser} userRole="student" onLogout={mockLogout} setView={mockSetView} />);
+    render(<Navbar user={mockUser} userRole="student" onLogout={mockLogout} />);
     
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
@@ -42,33 +65,33 @@ describe('Navbar Component', () => {
   });
 
   test('should show appropriate navigation links based on user role (admin)', () => {
-    render(<Navbar user={mockUser} userRole="admin" onLogout={mockLogout} setView={mockSetView} />);
+    render(<Navbar user={mockUser} userRole="admin" onLogout={mockLogout} />);
     
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Manage Students')).toBeInTheDocument();
   });
 
-  test('should call setView when clicking on navigation links', () => {
-    render(<Navbar user={mockUser} userRole="admin" onLogout={mockLogout} setView={mockSetView} />);
+  test('should have proper navigation links that go to correct routes', () => {
+    render(<Navbar user={mockUser} userRole="admin" onLogout={mockLogout} />);
     
     // Test management link
-    fireEvent.click(screen.getByText('Manage Students'));
-    expect(mockSetView).toHaveBeenCalledWith('management');
+    const manageLink = screen.getByText('Manage Students').closest('a');
+    expect(manageLink).toHaveAttribute('href', '/manage-students');
     
     // Test home link
-    fireEvent.click(screen.getByText('Home'));
-    expect(mockSetView).toHaveBeenCalledWith('default');
+    const homeLink = screen.getByText('Home').closest('a');
+    expect(homeLink).toHaveAttribute('href', '/');
   });
 
   test('should call logout function when clicking on logout button', () => {
-    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} setView={mockSetView} />);
+    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} />);
     
     fireEvent.click(screen.getByText('Logout'));
     expect(mockLogout).toHaveBeenCalled();
   });
 
   test('should collapse and expand on mobile view', () => {
-    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} setView={mockSetView} />);
+    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} />);
     
     // Initially, menu should be collapsed on mobile
     const menuButton = screen.getByLabelText('Toggle navigation');
@@ -86,7 +109,7 @@ describe('Navbar Component', () => {
   });
   
   test('should have correct layout structure with nav links in center and user info on right', () => {
-    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} setView={mockSetView} />);
+    render(<Navbar user={mockUser} userRole={mockUserRole} onLogout={mockLogout} />);
     
     // Check that the elements exist in the correct containers
     const navLinksContainer = screen.getByTestId('nav-links');

@@ -929,20 +929,53 @@ export default class ReportService {
       // Get the calculated balance information
       const balanceInfo = await this.calculateStudentBalance(studentId);
       
-      // Calculate fees from attendance for display
-      const feeHistory = attendanceHistory.map(record => {
-        const fee = this.attendanceService.calculateAttendanceFee(
-          record.record.status,
-          record.record.attributes || {}
-        );
-        
-        return {
-          date: record.date,
-          status: record.record.status,
-          attributes: record.record.attributes || {},
-          fee
-        };
-      });
+      // Calculate the total payments made
+      const totalPaymentsMade = paymentHistory.reduce(
+        (total, payment) => total + (payment.amount || 0), 
+        0
+      );
+      
+      // Create a map to track which fees have been covered by payments
+      // We'll use the remaining payment amount to cover fees in chronological order
+      let remainingPaymentAmount = totalPaymentsMade;
+      
+      // Calculate fees from attendance for display with payment status
+      const feeHistory = attendanceHistory
+        .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date ascending
+        .map(record => {
+          const fee = this.attendanceService.calculateAttendanceFee(
+            record.record.status,
+            record.record.attributes || {}
+          );
+          
+          // Determine if this fee is paid, partially paid, or unpaid
+          let paymentStatus = 'unpaid';
+          let paidAmount = 0;
+          
+          if (remainingPaymentAmount > 0) {
+            if (remainingPaymentAmount >= fee) {
+              // Fee is fully paid
+              paymentStatus = 'paid';
+              paidAmount = fee;
+              remainingPaymentAmount -= fee;
+            } else {
+              // Fee is partially paid
+              paymentStatus = 'partial';
+              paidAmount = remainingPaymentAmount;
+              remainingPaymentAmount = 0;
+            }
+          }
+          
+          return {
+            date: record.date,
+            status: record.record.status,
+            attributes: record.record.attributes || {},
+            fee,
+            paymentStatus,
+            paidAmount,
+            remainingAmount: fee - paidAmount
+          };
+        });
       
       return {
         student: {
