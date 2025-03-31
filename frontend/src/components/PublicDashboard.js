@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../services/ReportService';
 import ErrorMessage from './ErrorMessage';
+import { useNavigate } from 'react-router-dom';
 import './PublicDashboard.css'; // Using the new CSS file
+
+// Fallback for tests
+const useNavigateSafe = () => {
+  try {
+    return useNavigate();
+  } catch (e) {
+    return jest.fn();
+  }
+};
 
 // Utility function to determine balance class based on amount
 const getBalanceClass = (balance) => {
@@ -13,12 +23,62 @@ const getBalanceClass = (balance) => {
   return "zero-balance";
 };
 
-const PublicDashboard = () => {
+// Utility function to get payment status badge class
+const getPaymentStatusClass = (status) => {
+  switch (status) {
+    case 'paid':
+      return "status-enrolled";
+    case 'partial':
+      return "status-pending";
+    case 'unpaid':
+      return "status-inactive";
+    default:
+      return "status-inactive";
+  }
+};
+
+// Utility function to get fee amount class based on payment status
+const getFeeAmountClass = (paymentStatus) => {
+  switch (paymentStatus) {
+    case 'paid':
+      return "fee-paid";
+    case 'partial':
+      return "fee-partial";
+    case 'unpaid':
+      return "negative-balance";
+    default:
+      return "negative-balance";
+  }
+};
+
+const PublicDashboard = ({ userRole }) => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentDetails, setStudentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showAllFees, setShowAllFees] = useState(false);
+  const navigate = useNavigateSafe();
+  
+  // Handle fee payment - navigate to the payment form with prefilled data
+  const handlePayFee = (fee) => {
+    if (!studentDetails || !selectedStudent) return;
+    
+    // Create the payment data
+    const paymentData = {
+      studentId: selectedStudent,
+      amount: fee.paymentStatus === 'unpaid' ? fee.fee : fee.remainingAmount,
+      feeId: fee.id || null,
+      feeDate: fee.date,
+      notes: `Payment for ${formatDate(fee.date)} - ${fee.status === 'absent' ? 'Absence' : ''}`
+    };
+    
+    // Store the data in sessionStorage for the PaymentForm to retrieve
+    sessionStorage.setItem('pendingPayment', JSON.stringify(paymentData));
+    
+    // Navigate to the payment dashboard
+    navigate('/payments?action=pay');
+  };
 
   // Load student data when component mounts
   useEffect(() => {
@@ -51,6 +111,7 @@ const PublicDashboard = () => {
       try {
         const details = await reportService.getStudentFinancialDetails(selectedStudent);
         setStudentDetails(details);
+        setShowAllFees(false); // Reset to only show unpaid fees when a new student is selected
       } catch (err) {
         setError(err.message);
         console.error('Error fetching student details:', err);
@@ -73,6 +134,11 @@ const PublicDashboard = () => {
     setStudentDetails(null);
   };
 
+  // Toggle between showing all fees or only unpaid fees
+  const toggleFeeDisplay = () => {
+    setShowAllFees(!showAllFees);
+  };
+
   // Format currency values
   const formatCurrency = (amount) => {
     return `$${amount.toFixed(2)}`;
@@ -85,6 +151,12 @@ const PublicDashboard = () => {
     return dateObj.toLocaleDateString();
   };
 
+  // Calculate unpaid fees count
+  const getUnpaidFeesCount = () => {
+    if (!studentDetails) return 0;
+    return studentDetails.feeHistory.filter(fee => fee.fee > 0 && (fee.paymentStatus === 'unpaid' || fee.paymentStatus === 'partial')).length;
+  };
+
   // Render the student details view
   const renderStudentDetails = () => {
     if (!studentDetails) return null;
@@ -92,6 +164,14 @@ const PublicDashboard = () => {
     // Calculate the balance for styling
     const balance = studentDetails.financialSummary.calculatedBalance || studentDetails.financialSummary.currentBalance;
     const balanceClass = getBalanceClass(balance);
+    
+    // Filter fees based on showAllFees flag
+    const feesToDisplay = studentDetails.feeHistory
+      .filter(fee => fee.fee > 0) // Only show entries with fees
+      .filter(fee => showAllFees || fee.paymentStatus === 'unpaid' || fee.paymentStatus === 'partial');
+    
+    const unpaidFeesCount = getUnpaidFeesCount();
+    const totalFeesCount = studentDetails.feeHistory.filter(fee => fee.fee > 0).length;
     
     return (
       <div className="student-details" data-testid="student-details">
@@ -161,9 +241,25 @@ const PublicDashboard = () => {
         
         {/* Fee History Section */}
         <div className="history-section" data-testid="fee-history">
-          <h3>Fee History</h3>
-          {studentDetails.feeHistory.length === 0 ? (
-            <p>No fee records found.</p>
+          <div className="section-header">
+            <h3>Fee History</h3>
+            <div className="section-actions">
+              {showAllFees ? (
+                <span className="section-counter">Showing all {totalFeesCount} fees</span>
+              ) : (
+                <span className="section-counter">Showing {unpaidFeesCount} unpaid fees</span>
+              )}
+              <button 
+                onClick={toggleFeeDisplay}
+                className="toggle-view-button"
+              >
+                {showAllFees ? 'Show Unpaid Only' : 'View All Fees'}
+              </button>
+            </div>
+          </div>
+          
+          {feesToDisplay.length === 0 ? (
+            <p>{showAllFees ? 'No fee records found.' : 'No unpaid fees.'}</p>
           ) : (
             <table className="history-table">
               <thead>
@@ -172,34 +268,59 @@ const PublicDashboard = () => {
                   <th>Status</th>
                   <th>Reason</th>
                   <th>Fee Amount</th>
+                  <th>Payment Status</th>
+                  <th>Remaining</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {studentDetails.feeHistory
-                  .filter(fee => fee.fee > 0) // Only show entries with fees
-                  .map((fee, index) => {
-                    // Generate reasons based on attributes
-                    let reason = fee.status === 'absent' ? 'Absence' : '';
-                    
-                    if (fee.attributes) {
-                      if (fee.attributes.late) reason = reason ? `${reason}, Late` : 'Late';
-                      if (fee.attributes.noShoes) reason = reason ? `${reason}, No Shoes` : 'No Shoes';
-                      if (fee.attributes.notInUniform) reason = reason ? `${reason}, Not In Uniform` : 'Not In Uniform';
-                    }
-                    
-                    return (
-                      <tr key={index}>
-                        <td>{formatDate(fee.date)}</td>
-                        <td>
-                          <span className={`status-badge status-${fee.status === 'absent' ? 'inactive' : 'enrolled'}`}>
-                            {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
-                          </span>
-                        </td>
-                        <td>{reason || 'N/A'}</td>
-                        <td className="negative-balance">{formatCurrency(fee.fee)}</td>
-                      </tr>
-                    );
-                  })}
+                {feesToDisplay.map((fee, index) => {
+                  // Generate reasons based on attributes
+                  let reason = fee.status === 'absent' ? 'Absence' : '';
+                  
+                  if (fee.attributes) {
+                    if (fee.attributes.late) reason = reason ? `${reason}, Late` : 'Late';
+                    if (fee.attributes.noShoes) reason = reason ? `${reason}, No Shoes` : 'No Shoes';
+                    if (fee.attributes.notInUniform) reason = reason ? `${reason}, Not In Uniform` : 'Not In Uniform';
+                  }
+                  
+                  return (
+                    <tr key={index} className={`fee-row fee-status-${fee.paymentStatus}`}>
+                      <td>{formatDate(fee.date)}</td>
+                      <td>
+                        <span className={`status-badge status-${fee.status === 'absent' ? 'inactive' : 'enrolled'}`}>
+                          {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
+                        </span>
+                      </td>
+                      <td>{reason || 'N/A'}</td>
+                      <td className={getFeeAmountClass(fee.paymentStatus)}>{formatCurrency(fee.fee)}</td>
+                      <td>
+                        <span className={`status-badge ${getPaymentStatusClass(fee.paymentStatus)}`}>
+                          {fee.paymentStatus.charAt(0).toUpperCase() + fee.paymentStatus.slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        {fee.paymentStatus === 'unpaid' ? 
+                          <span className="negative-balance">{formatCurrency(fee.fee)}</span> :
+                          fee.paymentStatus === 'partial' ? 
+                            <span className="negative-balance">{formatCurrency(fee.remainingAmount)}</span> :
+                            <span className="paid-amount">$0.00</span>
+                        }
+                      </td>
+                      <td>
+                        {(fee.paymentStatus === 'unpaid' || fee.paymentStatus === 'partial') && userRole === 'admin' && (
+                          <button 
+                            onClick={() => handlePayFee(fee)}
+                            className="pay-button"
+                            data-testid={`pay-fee-${index}`}
+                          >
+                            Pay
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

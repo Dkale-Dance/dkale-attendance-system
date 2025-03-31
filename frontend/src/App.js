@@ -13,7 +13,7 @@ import ErrorMessage from "./components/ErrorMessage";
 import Navbar from "./components/Navbar";
 import logo from "./assets/logo.png";
 import "./App.css";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 function App() {
   const [isRegister, setIsRegister] = useState(false);
@@ -22,7 +22,6 @@ function App() {
   const [studentProfile, setStudentProfile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true); // Start with loading state
-  const [view, setView] = useState("default"); // default, profile, management
 
   // Function to fetch user role when user is authenticated
   const fetchUserRole = async (userId) => {
@@ -104,7 +103,6 @@ function App() {
         // Note: The login method in AuthService now saves admin credentials securely if user is an admin
       }
       setUser(authenticatedUser);
-      setView("default");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -118,7 +116,6 @@ function App() {
       setUser(null);
       setUserRole(null);
       setStudentProfile(null);
-      setView("default");
     } catch (error) {
       setError(error.message);
     }
@@ -132,7 +129,6 @@ function App() {
       // Update student profile
       const updatedProfile = await studentService.updateStudent(user.uid, formData);
       setStudentProfile(updatedProfile);
-      setView("default");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -140,9 +136,8 @@ function App() {
     }
   };
 
-  // Render different content based on authentication state and user role
-  const renderContent = () => {
-    // Show loading indicator while checking auth state
+  // Home page component based on user role
+  const HomePage = () => {
     if (loading) {
       return <div className="loading" data-testid="loading-indicator">Loading...</div>;
     }
@@ -157,47 +152,6 @@ function App() {
       );
     }
 
-    // Profile editing view
-    if (view === "profile" && userRole === "student") {
-      return (
-        <div className="profile-editor">
-          <h2>Edit Your Profile</h2>
-          <StudentForm 
-            student={studentProfile} 
-            onSubmit={handleUpdateProfile} 
-            buttonText="Save Profile" 
-          />
-          <button onClick={() => setView("default")}>Cancel</button>
-        </div>
-      );
-    }
-
-    // Student management view (for admins)
-    if (view === "management" && userRole === "admin") {
-      return <StudentManagement userRole={userRole} />;
-    }
-
-    // Attendance dashboard view (for admins)
-    if (view === "attendance" && userRole === "admin") {
-      return <AttendanceDashboard userRole={userRole} />;
-    }
-    
-    // Payment dashboard view (for admins)
-    if (view === "payments" && userRole === "admin") {
-      return <PaymentDashboard userRole={userRole} />;
-    }
-    
-    // Financial reports view (for admins)
-    if (view === "financial-reports" && userRole === "admin") {
-      return <FinancialReports userRole={userRole} />;
-    }
-    
-    // Attendance reports view (for admins)
-    if (view === "attendance-reports" && userRole === "admin") {
-      return <AttendanceReports userRole={userRole} />;
-    }
-
-    // Default welcome view
     return (
       <div className="user-welcome" data-testid="welcome-section">
         <p data-testid="welcome-message">Welcome, {user.email}</p>
@@ -214,19 +168,53 @@ function App() {
     );
   };
 
+  // Profile editor component
+  const ProfileEditor = () => {
+    if (!user || userRole !== "student") {
+      return <Navigate to="/" />;
+    }
+
+    return (
+      <div className="profile-editor">
+        <h2>Edit Your Profile</h2>
+        <StudentForm 
+          student={studentProfile} 
+          onSubmit={handleUpdateProfile} 
+          buttonText="Save Profile" 
+        />
+      </div>
+    );
+  };
+
+  // Render content with auth protection
+  const ProtectedRoute = ({ element, requiredRole }) => {
+    if (loading) {
+      return <div className="loading" data-testid="loading-indicator">Loading...</div>;
+    }
+
+    if (!user) {
+      return <Navigate to="/" />;
+    }
+
+    if (requiredRole && userRole !== requiredRole) {
+      return <Navigate to="/" />;
+    }
+
+    return element;
+  };
+
   return (
     <Router>
       <div className="App" data-testid="app">
-        {/* Navbar is only shown when user is authenticated */}
+        {/* Navbar is shown for authenticated users and on the public dashboard */}
         <Navbar 
           user={user} 
           userRole={userRole} 
           onLogout={handleLogout} 
-          setView={setView} 
         />
         
         {/* Only show the logo on login/register screen */}
-        {!user && (
+        {!user && window.location.pathname === "/" && (
           <header className="App-header">
             <div className="logo-container">
               <img src={logo} alt="Company Logo" className="app-logo" />
@@ -237,11 +225,24 @@ function App() {
         <main>
           {error && <ErrorMessage message={error} />}
           <Routes>
-            {/* Public route accessible without authentication */}
-            <Route path="/public-dashboard" element={<PublicDashboard />} />
+            {/* Public route accessible without authentication, but with userRole for admin features */}
+            <Route path="/public-dashboard" element={<PublicDashboard userRole={userRole} />} />
             
-            {/* All other routes render the main content with authentication checks */}
-            <Route path="*" element={renderContent()} />
+            {/* Profile route for students */}
+            <Route path="/profile" element={<ProtectedRoute element={<ProfileEditor />} requiredRole="student" />} />
+            
+            {/* Admin routes */}
+            <Route path="/manage-students" element={<ProtectedRoute element={<StudentManagement userRole={userRole} />} requiredRole="admin" />} />
+            <Route path="/attendance" element={<ProtectedRoute element={<AttendanceDashboard userRole={userRole} />} requiredRole="admin" />} />
+            <Route path="/payments" element={<ProtectedRoute element={<PaymentDashboard userRole={userRole} />} requiredRole="admin" />} />
+            <Route path="/financial-reports" element={<ProtectedRoute element={<FinancialReports userRole={userRole} />} requiredRole="admin" />} />
+            <Route path="/attendance-reports" element={<ProtectedRoute element={<AttendanceReports userRole={userRole} />} requiredRole="admin" />} />
+            
+            {/* Home route */}
+            <Route path="/" element={<HomePage />} />
+            
+            {/* Catch-all route */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
       </div>

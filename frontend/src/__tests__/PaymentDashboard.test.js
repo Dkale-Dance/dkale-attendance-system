@@ -1,7 +1,15 @@
 // PaymentDashboard.test.js
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import PaymentDashboard from '../components/PaymentDashboard';
+
+// Mock useLocation
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: () => ({ pathname: '/payments', search: '' }),
+  BrowserRouter: ({ children }) => <div>{children}</div>
+}));
 
 // Mock the child components
 jest.mock('../components/PaymentForm', () => {

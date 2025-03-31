@@ -87,6 +87,37 @@
   color: #6c757d;
 }
 
+.fee-paid {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.fee-partial {
+  color: #fd7e14;
+  font-weight: bold;
+}
+
+/* Pay button styling */
+.pay-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pay-button:hover {
+  background-color: #218838;
+}
+
+.paid-amount {
+  color: #28a745;
+  font-weight: bold;
+}
+
 .view-details-button {
   background-color: #007bff;
   color: white;
@@ -181,15 +212,22 @@
   border-top: 1px solid #dee2e6;
 }
 
-.history-section h3 {
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.section-header h3 {
   font-size: 1.3rem;
   color: #343a40;
-  margin-bottom: 15px;
+  margin: 0;
   display: flex;
   align-items: center;
 }
 
-.history-section h3::before {
+.section-header h3::before {
   content: '';
   display: inline-block;
   width: 10px;
@@ -197,6 +235,32 @@
   background-color: #007bff;
   margin-right: 10px;
   border-radius: 50%;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.section-counter {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.toggle-view-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-view-button:hover {
+  background-color: #0069d9;
 }
 
 .history-table {
@@ -221,6 +285,19 @@
 
 .history-table tr:hover {
   background-color: #f1f3f5;
+}
+
+/* Fee row styling based on payment status */
+.fee-row.fee-status-paid {
+  background-color: rgba(40, 167, 69, 0.05);
+}
+
+.fee-row.fee-status-partial {
+  background-color: rgba(255, 193, 7, 0.05);
+}
+
+.fee-row.fee-status-unpaid {
+  background-color: rgba(220, 53, 69, 0.05);
 }
 
 .loading {
@@ -312,6 +389,17 @@
   
   .summary-item p {
     font-size: 1.5rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .section-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

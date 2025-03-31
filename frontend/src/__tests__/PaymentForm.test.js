@@ -109,7 +109,9 @@ describe('PaymentForm Component', () => {
         date: expect.any(Date),
         paymentMethod: 'cash',
         notes: 'Test payment',
-        adminId: 'admin123'
+        adminId: 'admin123',
+        feeId: null,
+        feeDate: null
       });
     });
     

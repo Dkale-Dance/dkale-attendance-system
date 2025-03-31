@@ -3,16 +3,55 @@ import React, { useState, useEffect } from 'react';
 import PaymentForm from './PaymentForm';
 import PaymentList from './PaymentList';
 import ErrorMessage from './ErrorMessage';
+import { useLocation } from 'react-router-dom';
 import styles from './StudentManagement.module.css'; // Reusing the existing management styles
+
+// Fallback for tests
+const useLocationSafe = () => {
+  try {
+    return useLocation();
+  } catch (e) {
+    return { pathname: '/payments', search: '' };
+  }
+};
 
 const PaymentDashboard = ({ userRole }) => {
   const [error] = useState('');
   const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' or 'form'
   const [refreshKey, setRefreshKey] = useState(0); // For forcing re-render of payment list
+  const [pendingPayment, setPendingPayment] = useState(null);
+  const location = useLocationSafe();
+
+  // Check for URL params and pending payments when component mounts
+  useEffect(() => {
+    // Check URL parameters for action=pay
+    const params = new URLSearchParams(location.search);
+    if (params.get('action') === 'pay') {
+      // Switch to payment form view
+      setViewMode('form');
+      
+      // Check for pending payment data in sessionStorage
+      const pendingPaymentData = sessionStorage.getItem('pendingPayment');
+      if (pendingPaymentData) {
+        try {
+          const paymentData = JSON.parse(pendingPaymentData);
+          setPendingPayment(paymentData);
+          
+          // Clear the pending payment from sessionStorage
+          sessionStorage.removeItem('pendingPayment');
+        } catch (err) {
+          console.error('Error parsing pending payment data:', err);
+        }
+      }
+    }
+  }, [location]);
 
   const handlePaymentSuccess = () => {
     // Force refresh of the payment list after successful payment
     setRefreshKey(prevKey => prevKey + 1);
+    
+    // Clear any pending payment data
+    setPendingPayment(null);
   };
 
   // Listen for custom event to refresh payments
@@ -65,7 +104,10 @@ const PaymentDashboard = ({ userRole }) => {
       
       <div className={styles['content-container']}>
         {viewMode === 'form' ? (
-          <PaymentForm onSuccess={handlePaymentSuccess} />
+          <PaymentForm 
+            onSuccess={handlePaymentSuccess} 
+            pendingPayment={pendingPayment}
+          />
         ) : (
           <div key={refreshKey}>
             <PaymentList />
