@@ -860,6 +860,9 @@ export default class ReportService {
    */
   async calculateStudentBalance(studentId) {
     try {
+      // Get student profile to check status
+      const student = await this.studentRepository.getStudentById(studentId);
+      
       // Get student's payment history
       const paymentHistory = await this.reportRepository.getStudentPaymentHistory(studentId);
       
@@ -875,6 +878,17 @@ export default class ReportService {
         (total, payment) => total + (payment.amount || 0), 
         0
       );
+      
+      // If student is inactive, return current values without calculating new fees
+      // This effectively freezes the balance for inactive students
+      if (student && student.enrollmentStatus === 'Inactive') {
+        return {
+          totalFeesCharged: student.frozenFeesTotal || 0,
+          totalPaymentsMade,
+          calculatedBalance: (student.frozenFeesTotal || 0) - totalPaymentsMade,
+          inactive: true
+        };
+      }
       
       // Calculate fees from attendance
       const totalFeesCharged = safeAttendanceHistory.reduce((total, record) => {
@@ -1013,7 +1027,7 @@ export default class ReportService {
       
       for (const student of students) {
         // Only include enrolled students or those with pending payment
-        // Excludes "Inactive" and "Removed" students
+        // Explicitly excludes "Inactive" and "Removed" students
         if (student.enrollmentStatus === 'Enrolled' || student.enrollmentStatus === 'Pending Payment') {
           // Get payment history - needed for tests
           const paymentHistory = await this.reportRepository.getStudentPaymentHistory(student.id);

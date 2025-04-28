@@ -68,6 +68,63 @@
   border-bottom: 3px solid #61dafb;
 }
 
+.tabs button.warning-tab {
+  color: #f44336;
+  border-bottom: 3px solid transparent;
+}
+
+.tabs button.warning-tab:hover {
+  color: #f44336;
+  border-bottom: 3px solid #f44336;
+}
+
+.inactive-management {
+  background-color: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.inactive-management h3 {
+  color: #f44336;
+  margin-top: 0;
+}
+
+.inactive-section {
+  margin-bottom: 15px;
+}
+
+.frozen-details {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.action-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.action-button:hover {
+  background-color: #d32f2f;
+}
+
+.reason-input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
 @media (max-width: 768px) {
   .form-view {
     padding: 20px;

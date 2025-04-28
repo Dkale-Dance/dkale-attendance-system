@@ -370,7 +370,12 @@ export default class AttendanceService {
       const pendingPaymentStudents = await this.studentRepository.getStudentsByStatus('Pending Payment');
       
       // Combine the two sets of students and sort by first name
-      return sortStudentsByFirstName([...enrolledStudents, ...pendingPaymentStudents]);
+      // Explicitly exclude any students marked as Inactive or Removed
+      const eligibleStudents = [...enrolledStudents, ...pendingPaymentStudents].filter(
+        student => student.enrollmentStatus !== 'Inactive' && student.enrollmentStatus !== 'Removed'
+      );
+      
+      return sortStudentsByFirstName(eligibleStudents);
     } catch (error) {
       console.error("Error fetching eligible students:", error);
       throw new Error(`Failed to fetch eligible students: ${error.message}`);

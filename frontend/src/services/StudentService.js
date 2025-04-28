@@ -41,8 +41,58 @@ export default class StudentService {
       throw new Error(`Invalid status: ${newStatus}. Must be one of: ${validStatuses.join(", ")}`);
     }
 
-    // Update student status
+    // Special handling for setting to Inactive status - freeze fees
+    if (newStatus === "Inactive") {
+      const student = await this.getStudentById(studentId);
+      if (!student) {
+        throw new Error("Student not found");
+      }
+
+      // Get accurate balance calculation
+      const { reportService } = await import("./ReportService");
+      const balanceInfo = await reportService.calculateStudentBalance(studentId);
+
+      // Update student status and store frozen fee information
+      return this.studentRepository.updateStudent(studentId, { 
+        enrollmentStatus: newStatus,
+        frozenFeesTotal: balanceInfo.totalFeesCharged,
+        frozenBalance: balanceInfo.calculatedBalance,
+        frozenAt: new Date().toISOString()
+      });
+    }
+
+    // Standard update for all other statuses
     return this.studentRepository.updateStudent(studentId, { enrollmentStatus: newStatus });
+  }
+  
+  /**
+   * Clears the balance for a student (primarily used for inactive students)
+   * @param {string} studentId - The ID of the student
+   * @param {string} reason - The reason for clearing the balance
+   * @returns {Promise<Object>} Updated student data
+   */
+  async clearStudentBalance(studentId, reason) {
+    const student = await this.getStudentById(studentId);
+    if (!student) {
+      throw new Error("Student not found");
+    }
+    
+    // Create an audit record of the balance clearing
+    const balanceBeforeClearing = student.balance || 0;
+    const clearingData = {
+      balance: 0,
+      balanceHistory: {
+        ...(student.balanceHistory || {}),
+        cleared: {
+          date: new Date().toISOString(),
+          previousBalance: balanceBeforeClearing,
+          reason: reason || "Administrative action"
+        }
+      }
+    };
+    
+    // Update the student record
+    return this.studentRepository.updateStudent(studentId, clearingData);
   }
 
   async removeStudent(studentId) {

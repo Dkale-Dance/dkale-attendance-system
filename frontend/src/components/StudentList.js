@@ -144,9 +144,21 @@ const StudentList = ({ onSelectStudent }) => {
                   </select>
                 </td>
                 <td>
-                  ${student.calculatedBalance !== undefined 
-                    ? student.calculatedBalance.toFixed(2) 
-                    : (student.balance || 0).toFixed(2)}
+                  {student.enrollmentStatus === 'Inactive' ? (
+                    <span title="Balance frozen for inactive student">
+                      ${student.frozenBalance !== undefined 
+                        ? student.frozenBalance.toFixed(2) 
+                        : student.calculatedBalance !== undefined
+                          ? student.calculatedBalance.toFixed(2)
+                          : (student.balance || 0).toFixed(2)} ❄️
+                    </span>
+                  ) : (
+                    <span>
+                      ${student.calculatedBalance !== undefined 
+                        ? student.calculatedBalance.toFixed(2) 
+                        : (student.balance || 0).toFixed(2)}
+                    </span>
+                  )}
                 </td>
                 <td className={styles['button-container']}>
                   {onSelectStudent && (
