@@ -41,6 +41,14 @@ export default class ReportService {
         return map;
       }, {});
       
+      // Filter active students (only Enrolled or Pending Payment)
+      const activeStudents = students.filter(
+        student => student.enrollmentStatus === 'Enrolled' || 
+                   student.enrollmentStatus === 'Pending Payment'
+      );
+      
+      const activeStudentIds = new Set(activeStudents.map(student => student.id));
+      
       // Calculate total fees charged for the month (from attendance attributes and status)
       let totalFeesCharged = 0;
       
@@ -49,7 +57,10 @@ export default class ReportService {
         const attendanceData = attendanceDay.data;
         
         // Process each student's attendance for this day
-        for (const [, attendance] of Object.entries(attendanceData)) {
+        for (const [studentId, attendance] of Object.entries(attendanceData)) {
+          // Skip inactive students
+          if (!activeStudentIds.has(studentId)) continue;
+          
           // Use the attendance service to calculate the fee based on status and attributes
           const fee = this.attendanceService.calculateAttendanceFee(
             attendance.status, 
@@ -60,11 +71,13 @@ export default class ReportService {
         }
       }
       
-      // Calculate total payments received for the month
-      const totalPaymentsReceived = monthlyPayments.reduce(
-        (total, payment) => total + (payment.amount || 0), 
-        0
-      );
+      // Calculate total payments received for the month (exclude inactive students)
+      const totalPaymentsReceived = monthlyPayments
+        .filter(payment => activeStudentIds.has(payment.studentId)) // Only active students
+        .reduce(
+          (total, payment) => total + (payment.amount || 0), 
+          0
+        );
       
       // Outstanding balance is the difference between fees charged and payments received
       const outstandingBalance = totalFeesCharged - totalPaymentsReceived;
@@ -125,6 +138,14 @@ export default class ReportService {
         return map;
       }, {});
       
+      // Filter active students (only Enrolled or Pending Payment)
+      const activeStudents = students.filter(
+        student => student.enrollmentStatus === 'Enrolled' || 
+                  student.enrollmentStatus === 'Pending Payment'
+      );
+      
+      const activeStudentIds = new Set(activeStudents.map(student => student.id));
+      
       // Initialize counters and breakdowns
       let totalFeesCharged = 0;
       let feesCollected = 0;
@@ -154,28 +175,31 @@ export default class ReportService {
           const attendanceData = attendanceDay.data;
           
           for (const [studentId, attendance] of Object.entries(attendanceData)) {
-          const status = attendance.status;
-          const attributes = attendance.attributes || {};
-          
-          // Calculate fee
-          const fee = this.attendanceService.calculateAttendanceFee(status, attributes);
-          totalFeesCharged += fee;
-          
-          // Initialize student fee record if needed
-          if (!studentFees[studentId]) {
-            studentFees[studentId] = {
-              totalFee: 0,
-              feeBreakdown: {
-                absence: 0,
-                late: 0,
-                noShoes: 0,
-                notInUniform: 0
-              }
-            };
-          }
-          
-          // Add to student's total fee
-          studentFees[studentId].totalFee += fee;
+            // Skip inactive students
+            if (!activeStudentIds.has(studentId)) continue;
+            
+            const status = attendance.status;
+            const attributes = attendance.attributes || {};
+            
+            // Calculate fee
+            const fee = this.attendanceService.calculateAttendanceFee(status, attributes);
+            totalFeesCharged += fee;
+            
+            // Initialize student fee record if needed
+            if (!studentFees[studentId]) {
+              studentFees[studentId] = {
+                totalFee: 0,
+                feeBreakdown: {
+                  absence: 0,
+                  late: 0,
+                  noShoes: 0,
+                  notInUniform: 0
+                }
+              };
+            }
+            
+            // Add to student's total fee
+            studentFees[studentId].totalFee += fee;
           
           // Add to fee type breakdowns
           if (status === 'absent') {
@@ -201,32 +225,39 @@ export default class ReportService {
       }
       }
       
-      // Calculate payments for each student
+      // Calculate payments for each student (exclude inactive students)
       const totalPaymentsReceived = monthlyPayments && Array.isArray(monthlyPayments) ?
-        monthlyPayments.reduce((total, payment) => {
+        monthlyPayments
+        .filter(payment => activeStudentIds.has(payment.studentId)) // Only active students
+        .reduce((total, payment) => {
           const studentId = payment.studentId;
           const amount = payment.amount || 0;
         
-        // Initialize student payment record if needed
-        if (!studentPayments[studentId]) {
-          studentPayments[studentId] = 0;
-        }
-        
-        // Add to student's total payment
-        studentPayments[studentId] += amount;
-        
-        return total + amount;
-      }, 0) : 0;
+          // Initialize student payment record if needed
+          if (!studentPayments[studentId]) {
+            studentPayments[studentId] = 0;
+          }
+          
+          // Add to student's total payment
+          studentPayments[studentId] += amount;
+          
+          return total + amount;
+        }, 0) : 0;
       
       // Combine fee and payment data for each student
       for (const studentId of new Set([...Object.keys(studentFees), ...Object.keys(studentPayments)])) {
         const student = studentMap[studentId];
         if (!student) continue; // Skip if student not found
         
+        // Skip inactive students - they shouldn't contribute to financial report totals
+        if (student.enrollmentStatus === 'Inactive' || student.enrollmentStatus === 'Removed') {
+          continue;
+        }
+        
         const feesCharged = studentFees[studentId]?.totalFee || 0;
         const paymentsMade = studentPayments[studentId] || 0;
         
-        // Determine payment status
+        // Determine payment status - ensure no negative balances
         let paymentStatus = 'none';
         if (feesCharged > 0) {
           if (paymentsMade >= feesCharged) {
@@ -259,8 +290,17 @@ export default class ReportService {
         });
       }
       
+      // Filter out inactive students from the details and sort by name
+      const filteredStudentDetails = studentDetails.filter(student => {
+        // Include only active students (Enrolled or Pending Payment)
+        const studentObj = studentMap[student.id];
+        return studentObj && 
+               (studentObj.enrollmentStatus === 'Enrolled' || 
+                studentObj.enrollmentStatus === 'Pending Payment');
+      });
+      
       // Sort students by name
-      studentDetails.sort((a, b) => a.name.localeCompare(b.name));
+      filteredStudentDetails.sort((a, b) => a.name.localeCompare(b.name));
       
       // Format month name for the report title
       const months = [
@@ -286,7 +326,7 @@ export default class ReportService {
           feesInPaymentProcess
         },
         feeBreakdown,
-        studentDetails,
+        studentDetails: filteredStudentDetails,
         rawData: {
           attendance: monthlyAttendance,
           payments: monthlyPayments
@@ -860,21 +900,44 @@ export default class ReportService {
    */
   async calculateStudentBalance(studentId) {
     try {
+      // Get student profile to check status
+      const student = await this.studentRepository.getStudentById(studentId);
+      
       // Get student's payment history
       const paymentHistory = await this.reportRepository.getStudentPaymentHistory(studentId);
       
-      // Get student's attendance history (for fee calculations)
-      const attendanceHistory = await this.reportRepository.getStudentAttendanceHistory(studentId);
-      
       // Handle null or undefined values for testing
       const safePaymentHistory = paymentHistory || [];
-      const safeAttendanceHistory = attendanceHistory || [];
       
       // Calculate total payments made
       const totalPaymentsMade = safePaymentHistory.reduce(
         (total, payment) => total + (payment.amount || 0), 
         0
       );
+      
+      // If student is inactive, return current values without calculating new fees
+      // This effectively freezes the balance for inactive students
+      if (student && student.enrollmentStatus === 'Inactive') {
+        // Get the frozen fee values
+        const frozenFeesTotal = student.frozenFeesTotal || 0;
+        
+        // Calculate balance - never let it be negative
+        const frozenBalance = Math.max(0, (student.frozenBalance || 0));
+        
+        return {
+          totalFeesCharged: frozenFeesTotal,
+          totalPaymentsMade,
+          // Use the greater of zero or the calculated balance (frozen - payments)
+          calculatedBalance: Math.max(0, frozenFeesTotal - totalPaymentsMade),
+          inactive: true,
+          frozenAt: student.frozenAt
+        };
+      }
+      
+      // For active students, calculate fees normally
+      // Get student's attendance history (for fee calculations)
+      const attendanceHistory = await this.reportRepository.getStudentAttendanceHistory(studentId);
+      const safeAttendanceHistory = attendanceHistory || [];
       
       // Calculate fees from attendance
       const totalFeesCharged = safeAttendanceHistory.reduce((total, record) => {
@@ -890,8 +953,8 @@ export default class ReportService {
         return total + fee;
       }, 0);
       
-      // Calculate the real balance
-      const calculatedBalance = totalFeesCharged - totalPaymentsMade;
+      // Calculate the real balance - never let it be negative
+      const calculatedBalance = Math.max(0, totalFeesCharged - totalPaymentsMade);
       
       return {
         totalFeesCharged,
