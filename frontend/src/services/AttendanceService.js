@@ -400,6 +400,54 @@ export default class AttendanceService {
       throw new Error(`Failed to fetch attendance summary: ${error.message}`);
     }
   }
+
+  /**
+   * Removes a student's attendance record for a specific date and adjusts their balance if needed
+   * @param {Date} date - The date of attendance
+   * @param {string} studentId - The student's ID
+   * @returns {Promise<Object>} The removed record and adjustment information
+   */
+  async removeAttendanceWithFeeAdjustment(date, studentId) {
+    try {
+      // Get the previous attendance record to calculate fee difference
+      const previousRecord = await this.attendanceRepository.getAttendanceRecord(date, studentId);
+      
+      // If there was no previous record, nothing to do
+      if (!previousRecord) {
+        return { removed: false, reason: 'No attendance record found' };
+      }
+      
+      // Get previous status and attributes for fee calculation
+      const previousStatus = previousRecord.status;
+      const previousAttributes = previousRecord.attributes || {};
+      
+      console.log(`Removing attendance for student ${studentId} (previous status: ${previousStatus})`);
+      
+      // Remove the attendance record
+      const removedRecord = await this.attendanceRepository.removeAttendance(date, studentId);
+      
+      // Calculate the fee that was previously applied
+      const previousFee = this.calculateAttendanceFee(previousStatus, previousAttributes);
+      
+      // If there was a fee, we need to reduce the student's balance
+      if (previousFee > 0) {
+        console.log(`Reducing student ${studentId} balance by ${previousFee} due to attendance removal`);
+        await this.studentService.reduceBalance(studentId, previousFee);
+      }
+      
+      // Return information about the removed record and adjustment
+      return {
+        removed: true,
+        previousStatus,
+        previousAttributes,
+        feeAdjustment: -previousFee, // Negative because we're reducing their balance
+        removedRecord
+      };
+    } catch (error) {
+      console.error("Error removing attendance with fee adjustment:", error);
+      throw new Error(`Failed to remove attendance with fee adjustment: ${error.message}`);
+    }
+  }
 }
 
 // Export a default instance

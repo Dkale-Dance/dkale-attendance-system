@@ -548,4 +548,125 @@ describe('AttendanceService', () => {
       expect(studentService.addBalance).not.toHaveBeenCalled(); // No new fees added
     });
   });
+  
+  describe('removeAttendanceWithFeeAdjustment', () => {
+    beforeEach(() => {
+      // Add removeAttendance to the mock repository
+      mockAttendanceRepository.removeAttendance = jest.fn();
+    });
+    
+    it('should remove attendance and adjust balance for absent status (reduce $5)', async () => {
+      // Setup
+      const studentId = 'student1';
+      const { studentService } = require('../services/StudentService');
+      
+      // Mock previous record with 'absent' status
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue({
+        status: 'absent',
+        attributes: {},
+        timestamp: mockDate
+      });
+      
+      mockAttendanceRepository.removeAttendance.mockResolvedValue({
+        status: 'absent',
+        attributes: {},
+        timestamp: mockDate
+      });
+      
+      // Exercise
+      const result = await attendanceService.removeAttendanceWithFeeAdjustment(mockDate, studentId);
+      
+      // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
+      expect(mockAttendanceRepository.removeAttendance).toHaveBeenCalledWith(mockDate, studentId);
+      expect(studentService.reduceBalance).toHaveBeenCalledWith(studentId, 5); // Should remove the $5 fee
+      
+      expect(result.removed).toBe(true);
+      expect(result.previousStatus).toBe('absent');
+      expect(result.feeAdjustment).toBe(-5);
+    });
+    
+    it('should remove attendance and adjust balance for present with fee attributes', async () => {
+      // Setup
+      const studentId = 'student1';
+      const { studentService } = require('../services/StudentService');
+      
+      // Mock previous record with 'present' status and fee attributes
+      const attributes = { late: true, noShoes: true };
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue({
+        status: 'present',
+        attributes,
+        timestamp: mockDate
+      });
+      
+      mockAttendanceRepository.removeAttendance.mockResolvedValue({
+        status: 'present',
+        attributes,
+        timestamp: mockDate
+      });
+      
+      // Exercise
+      const result = await attendanceService.removeAttendanceWithFeeAdjustment(mockDate, studentId);
+      
+      // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
+      expect(mockAttendanceRepository.removeAttendance).toHaveBeenCalledWith(mockDate, studentId);
+      expect(studentService.reduceBalance).toHaveBeenCalledWith(studentId, 2); // $1 for late + $1 for noShoes
+      
+      expect(result.removed).toBe(true);
+      expect(result.previousStatus).toBe('present');
+      expect(result.feeAdjustment).toBe(-2);
+    });
+    
+    it('should remove attendance without fee adjustment for medicalAbsence', async () => {
+      // Setup
+      const studentId = 'student1';
+      const { studentService } = require('../services/StudentService');
+      
+      // Mock previous record with 'medicalAbsence' status (no fee)
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue({
+        status: 'medicalAbsence',
+        attributes: {},
+        timestamp: mockDate
+      });
+      
+      mockAttendanceRepository.removeAttendance.mockResolvedValue({
+        status: 'medicalAbsence',
+        attributes: {},
+        timestamp: mockDate
+      });
+      
+      // Exercise
+      const result = await attendanceService.removeAttendanceWithFeeAdjustment(mockDate, studentId);
+      
+      // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
+      expect(mockAttendanceRepository.removeAttendance).toHaveBeenCalledWith(mockDate, studentId);
+      expect(studentService.reduceBalance).not.toHaveBeenCalled(); // No fee to remove
+      
+      expect(result.removed).toBe(true);
+      expect(result.previousStatus).toBe('medicalAbsence');
+      expect(result.feeAdjustment).toBe(-0);
+    });
+    
+    it('should handle case when there is no attendance record to remove', async () => {
+      // Setup
+      const studentId = 'student1';
+      const { studentService } = require('../services/StudentService');
+      
+      // Mock no previous record
+      mockAttendanceRepository.getAttendanceRecord.mockResolvedValue(null);
+      
+      // Exercise
+      const result = await attendanceService.removeAttendanceWithFeeAdjustment(mockDate, studentId);
+      
+      // Verify
+      expect(mockAttendanceRepository.getAttendanceRecord).toHaveBeenCalledWith(mockDate, studentId);
+      expect(mockAttendanceRepository.removeAttendance).not.toHaveBeenCalled();
+      expect(studentService.reduceBalance).not.toHaveBeenCalled();
+      
+      expect(result.removed).toBe(false);
+      expect(result.reason).toBe('No attendance record found');
+    });
+  });
 });

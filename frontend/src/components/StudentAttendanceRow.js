@@ -8,6 +8,7 @@ const StudentAttendanceRow = ({
   onStatusChange, 
   onAttributeChange,
   onSelect,
+  onRemove,
   isSelected,
   recentlyUpdated
 }) => {
@@ -184,9 +185,19 @@ const StudentAttendanceRow = ({
           )}
           
           {student.attendance?.timestamp && (
-            <span className={styles.timestamp}>
-              Last updated: {formatTimestamp(student.attendance.timestamp)}
-            </span>
+            <div className={styles['attendance-actions']}>
+              <span className={styles.timestamp}>
+                Last updated: {formatTimestamp(student.attendance.timestamp)}
+              </span>
+              <button 
+                className={styles['remove-button']} 
+                onClick={() => onRemove && onRemove(student.id)}
+                data-testid={`remove-attendance-${student.id}`}
+                title="Remove this attendance record"
+              >
+                Remove
+              </button>
+            </div>
           )}
         </div>
       </td>
