@@ -212,4 +212,67 @@ describe('AttendanceRepository', () => {
       );
     });
   });
+  
+  describe('removeAttendance', () => {
+    it('should remove a specific student attendance record', async () => {
+      // Setup
+      const date = mockDate;
+      const studentId = 'student1';
+      const mockAttendanceData = {
+        student1: { status: 'present', timestamp: mockDate, attributes: {} },
+        student2: { status: 'absent', timestamp: mockDate, attributes: {} }
+      };
+      
+      mockDoc.exists.mockReturnValue(true);
+      mockDoc.data.mockReturnValue(mockAttendanceData);
+      
+      // Exercise
+      const result = await attendanceRepository.removeAttendance(date, studentId);
+      
+      // Verify
+      expect(doc).toHaveBeenCalledWith(mockDb, 'attendance', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+      expect(getDoc).toHaveBeenCalledWith(mockDocRef);
+      expect(setDoc).toHaveBeenCalledWith(
+        mockDocRef, 
+        { student2: { status: 'absent', timestamp: mockDate, attributes: {} } }
+      );
+      expect(result).toEqual({ status: 'present', timestamp: mockDate, attributes: {} });
+    });
+    
+    it('should handle non-existent document', async () => {
+      // Setup
+      const date = mockDate;
+      const studentId = 'student1';
+      
+      mockDoc.exists.mockReturnValue(false);
+      
+      // Exercise
+      const result = await attendanceRepository.removeAttendance(date, studentId);
+      
+      // Verify
+      expect(getDoc).toHaveBeenCalledWith(mockDocRef);
+      expect(setDoc).not.toHaveBeenCalled();
+      expect(result).toBeUndefined();
+    });
+    
+    it('should handle non-existent student record', async () => {
+      // Setup
+      const date = mockDate;
+      const studentId = 'student1';
+      const mockAttendanceData = {
+        student2: { status: 'absent', timestamp: mockDate, attributes: {} }
+      };
+      
+      mockDoc.exists.mockReturnValue(true);
+      mockDoc.data.mockReturnValue(mockAttendanceData);
+      
+      // Exercise
+      const result = await attendanceRepository.removeAttendance(date, studentId);
+      
+      // Verify
+      expect(getDoc).toHaveBeenCalledWith(mockDocRef);
+      expect(setDoc).not.toHaveBeenCalled();
+      expect(result).toBeUndefined();
+    });
+  });
 });

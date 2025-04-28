@@ -189,6 +189,46 @@ export class AttendanceRepository {
       throw new Error(`Failed to bulk update attendance with attributes: ${error.message}`);
     }
   }
+
+  /**
+   * Removes attendance record for a specific student on a given date
+   * @param {Date} date - The date of attendance
+   * @param {string} studentId - The student's ID
+   * @returns {Promise<void>}
+   */
+  async removeAttendance(date, studentId) {
+    try {
+      const dateStr = this.formatDateForDocId(date);
+      const attendanceRef = doc(this.db, this.collectionName, dateStr);
+      
+      // Get the current attendance data
+      const docSnap = await getDoc(attendanceRef);
+      
+      if (!docSnap.exists()) {
+        // No attendance record exists for this date
+        return;
+      }
+      
+      const attendanceData = docSnap.data();
+      
+      // Check if the student has an attendance record for this date
+      if (!attendanceData[studentId]) {
+        // No attendance record for this student on this date
+        return;
+      }
+      
+      // Create an updated object without the student's record
+      const { [studentId]: removedRecord, ...updatedAttendance } = attendanceData;
+      
+      // Update the document to remove the student's record
+      await setDoc(attendanceRef, updatedAttendance);
+      
+      return removedRecord; // Return the removed record for reference
+    } catch (error) {
+      console.error("Error removing attendance:", error);
+      throw new Error(`Failed to remove attendance: ${error.message}`);
+    }
+  }
 }
 
 // Export a default instance

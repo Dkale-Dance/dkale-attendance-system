@@ -155,6 +155,19 @@ const AttendanceDashboard = ({ userRole }) => {
     }
   };
   
+  // Handle removing attendance for a single student
+  const handleRemoveAttendance = async (studentId) => {
+    try {
+      setError('');
+      await attendanceService.removeAttendanceWithFeeAdjustment(selectedDate, studentId);
+      
+      // Real-time listener will update the UI
+    } catch (err) {
+      setError(err.message);
+      console.error('Error removing attendance:', err);
+    }
+  };
+  
   // Handle checkbox selection for bulk actions
   const handleStudentSelect = (studentId) => {
     setSelectedStudents(prevSelected => {
@@ -314,6 +327,7 @@ const AttendanceDashboard = ({ userRole }) => {
                     onStatusChange={handleStatusChange}
                     onAttributeChange={handleAttributeChange}
                     onSelect={handleStudentSelect}
+                    onRemove={handleRemoveAttendance}
                     isSelected={selectedStudents.includes(student.id)}
                     recentlyUpdated={recentlyUpdated[student.id]}
                   />

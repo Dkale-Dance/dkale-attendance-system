@@ -178,6 +178,28 @@
   margin-top: 4px;
 }
 
+.attendance-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.remove-button {
+  background-color: #d93025;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.remove-button:hover {
+  background-color: #b52b1c;
+}
+
 .loading {
   display: flex;
   justify-content: center;
