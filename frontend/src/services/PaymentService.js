@@ -10,6 +10,53 @@ export default class PaymentService {
     this.paymentRepository = paymentRepository;
     this.studentRepository = studentRepository;
   }
+  
+  /**
+   * Deletes a payment and updates the student's balance
+   * @param {string} paymentId - The payment ID to delete
+   * @returns {Promise<Object>} Result of the operation
+   */
+  async deletePayment(paymentId) {
+    try {
+      // Get the payment record first
+      const payment = await this.paymentRepository.getPaymentById(paymentId);
+      
+      if (!payment) {
+        throw new Error("Payment not found");
+      }
+      
+      // Get the student
+      const student = await this.studentRepository.getStudentById(payment.studentId);
+      
+      if (!student) {
+        throw new Error("Student not found");
+      }
+      
+      // Delete the payment
+      await this.paymentRepository.deletePayment(paymentId);
+      
+      // Add the payment amount back to the student's balance
+      // Only if they're not inactive - we don't modify balances for inactive students
+      let updatedStudent = student;
+      if (student.enrollmentStatus !== 'Inactive' && student.enrollmentStatus !== 'Removed') {
+        const currentBalance = student.balance || 0;
+        const newBalance = currentBalance + payment.amount;
+        updatedStudent = await this.studentRepository.updateStudent(
+          payment.studentId,
+          { balance: newBalance }
+        );
+      }
+      
+      return { 
+        success: true, 
+        deletedPayment: payment,
+        updatedStudent
+      };
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      throw error;
+    }
+  }
 
   /**
    * Validates payment data

@@ -1,4 +1,4 @@
-import { getFirestore, doc, setDoc, getDoc, Timestamp, collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, Timestamp, collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import app from "../lib/firebase/config/config";
 
@@ -12,6 +12,21 @@ export class PaymentRepository {
       this.db = {};
     }
     this.collectionName = "payments";
+  }
+  
+  /**
+   * Deletes a payment record
+   * @param {string} paymentId - The payment ID to delete
+   * @returns {Promise<void>}
+   */
+  async deletePayment(paymentId) {
+    try {
+      const paymentRef = doc(this.db, this.collectionName, paymentId);
+      await deleteDoc(paymentRef);
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      throw new Error(`Failed to delete payment: ${error.message}`);
+    }
   }
 
   /**

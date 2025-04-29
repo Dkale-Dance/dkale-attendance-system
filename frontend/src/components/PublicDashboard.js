@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../services/ReportService';
+import { paymentService } from '../services/PaymentService';
 import ErrorMessage from './ErrorMessage';
 import { useNavigate } from 'react-router-dom';
 import './PublicDashboard.css'; // Using the new CSS file
@@ -80,6 +81,31 @@ const PublicDashboard = ({ userRole }) => {
     navigate('/payments?action=pay');
   };
 
+  // Handle payment deletion
+  const handleDeletePayment = async (paymentId) => {
+    if (!window.confirm('Are you sure you want to delete this payment? This will increase the student\'s balance.')) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await paymentService.deletePayment(paymentId);
+      
+      // Refresh student details after deletion
+      if (selectedStudent) {
+        const details = await reportService.getStudentFinancialDetails(selectedStudent);
+        setStudentDetails(details);
+      }
+      
+      alert('Payment deleted successfully');
+    } catch (err) {
+      setError(`Failed to delete payment: ${err.message}`);
+      console.error('Error deleting payment:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Load student data when component mounts
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -218,6 +244,7 @@ const PublicDashboard = ({ userRole }) => {
                   <th>Amount</th>
                   <th>Payment Method</th>
                   <th>Notes</th>
+                  {userRole === 'admin' && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -232,6 +259,17 @@ const PublicDashboard = ({ userRole }) => {
                       }
                     </td>
                     <td>{payment.notes || 'N/A'}</td>
+                    {userRole === 'admin' && (
+                      <td>
+                        <button 
+                          onClick={() => handleDeletePayment(payment.id)}
+                          className="delete-button"
+                          data-testid={`delete-payment-${payment.id}`}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
