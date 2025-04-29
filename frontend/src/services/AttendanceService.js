@@ -9,6 +9,24 @@ export default class AttendanceService {
     this.studentRepository = studentRepository;
     this.studentService = studentServiceInstance;
   }
+  
+  /**
+   * Removes a fee record and adjusts the student's balance accordingly
+   * Used by the PublicDashboard to allow admins to delete fee entries and update balances
+   * @param {Date} date - The date of the fee/attendance record to remove
+   * @param {string} studentId - The student's ID
+   * @returns {Promise<Object>} Result containing status, previous record details, and balance adjustment
+   */
+  async removeFeeRecord(date, studentId) {
+    try {
+      // This is essentially the same as removeAttendanceWithFeeAdjustment
+      // but with a different name for clarity in the fee-related context
+      return this.removeAttendanceWithFeeAdjustment(date, studentId);
+    } catch (error) {
+      console.error("Error removing fee record:", error);
+      throw new Error(`Failed to remove fee record: ${error.message}`);
+    }
+  }
 
   /**
    * Get raw attendance data for a specific date
@@ -207,9 +225,8 @@ export default class AttendanceService {
       // Ensure previous record attributes are properly initialized
       const previousAttributes = previousRecord.attributes || {};
       
-      // Get previous and new status for logging/debugging
+      // Get previous status for fee calculation
       const previousStatus = previousRecord.status;
-      console.log(`Changing attendance for student ${studentId} from ${previousStatus} to ${status}`);
       
       // Calculate fee difference between old and new status
       const feeDifference = this.calculateFeeDifference(
@@ -219,20 +236,14 @@ export default class AttendanceService {
         normalizedAttributes
       );
       
-      console.log(`Fee difference calculated: ${feeDifference}`);
-      
       // Apply fee adjustment to student balance
       if (feeDifference > 0) {
         // Fee increased, add to balance
-        console.log(`Adding ${feeDifference} to student ${studentId} balance`);
         await this.studentService.addBalance(studentId, feeDifference);
       } else if (feeDifference < 0) {
         // Fee decreased, reduce from balance
         const amountToReduce = Math.abs(feeDifference);
-        console.log(`Reducing ${amountToReduce} from student ${studentId} balance`);
         await this.studentService.reduceBalance(studentId, amountToReduce);
-      } else {
-        console.log(`No fee adjustment needed for student ${studentId}`);
       }
       
       // Return the adjustment amount for reference
@@ -284,8 +295,6 @@ export default class AttendanceService {
       // Update attendance records first in bulk for efficiency
       await this.attendanceRepository.bulkUpdateAttendanceWithAttributes(date, studentIds, status, normalizedAttributes);
       
-      console.log(`Bulk updating attendance for ${studentIds.length} students to ${status}`);
-      
       // Process fee adjustments for each student individually and collect results
       const adjustmentResults = [];
       
@@ -313,8 +322,6 @@ export default class AttendanceService {
           const previousStatus = previousRecord.status;
           const previousAttributes = previousRecord.attributes || {};
           
-          console.log(`Student ${studentId}: Changing from ${previousStatus} to ${status}`);
-          
           // Calculate fee difference
           const feeDifference = this.calculateFeeDifference(
             previousStatus,
@@ -322,8 +329,6 @@ export default class AttendanceService {
             status,
             normalizedAttributes
           );
-          
-          console.log(`Student ${studentId}: Fee difference = ${feeDifference}`);
           
           // Apply fee adjustment
           if (feeDifference > 0) {
@@ -421,8 +426,6 @@ export default class AttendanceService {
       const previousStatus = previousRecord.status;
       const previousAttributes = previousRecord.attributes || {};
       
-      console.log(`Removing attendance for student ${studentId} (previous status: ${previousStatus})`);
-      
       // Remove the attendance record
       const removedRecord = await this.attendanceRepository.removeAttendance(date, studentId);
       
@@ -431,7 +434,6 @@ export default class AttendanceService {
       
       // If there was a fee, we need to reduce the student's balance
       if (previousFee > 0) {
-        console.log(`Reducing student ${studentId} balance by ${previousFee} due to attendance removal`);
         await this.studentService.reduceBalance(studentId, previousFee);
       }
       
