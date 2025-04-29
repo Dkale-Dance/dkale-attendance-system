@@ -234,7 +234,7 @@ const AttendanceDashboard = ({ userRole }) => {
     return attendanceData.filter(student => selectedStudents.includes(student.id));
   }, [attendanceData, selectedStudents]);
   
-  // Calculate role counts
+  // Calculate role counts for present students
   const roleCounts = useMemo(() => {
     const presentStudents = attendanceData.filter(student => 
       student.attendance?.status === 'present'
@@ -277,10 +277,10 @@ const AttendanceDashboard = ({ userRole }) => {
       
       {!loading && (
         <div className={styles['role-summary']} data-testid="role-summary">
-          <h3>Attendance Summary</h3>
+          <h3>Today's Attendance</h3>
           <p>Present Students: {roleCounts.totalPresent}</p>
-          <p>Leads: {roleCounts.leads}</p>
-          <p>Follows: {roleCounts.follows}</p>
+          <p>Leads Present: {roleCounts.leads}</p>
+          <p>Follows Present: {roleCounts.follows}</p>
           {roleCounts.unknown > 0 && <p>Unspecified Role: {roleCounts.unknown}</p>}
         </div>
       )}
@@ -334,6 +334,7 @@ const AttendanceDashboard = ({ userRole }) => {
                 </th>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Dance Role</th>
                 <th>Attendance & Fee Attributes</th>
               </tr>
             </thead>

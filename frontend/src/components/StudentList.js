@@ -1,5 +1,5 @@
 // StudentList.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { studentService } from '../services/StudentService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentList.module.css';
@@ -87,6 +87,20 @@ const StudentList = ({ onSelectStudent }) => {
     }
   };
 
+  // Calculate role counts for enrolled students
+  const roleCounts = useMemo(() => {
+    const enrolledStudents = students.filter(student => 
+      student.enrollmentStatus === 'Enrolled'
+    );
+    
+    return {
+      totalEnrolled: enrolledStudents.length,
+      leads: enrolledStudents.filter(student => student.danceRole === 'Lead').length,
+      follows: enrolledStudents.filter(student => student.danceRole === 'Follow').length,
+      unknown: enrolledStudents.filter(student => !student.danceRole).length
+    };
+  }, [students]);
+
   if (loading) {
     return <div data-testid="loading-message">Loading students...</div>;
   }
@@ -111,6 +125,16 @@ const StudentList = ({ onSelectStudent }) => {
         </select>
       </div>
       
+      {filterStatus === 'Enrolled' || filterStatus === 'All' ? (
+        <div className={styles['role-summary']} data-testid="role-summary">
+          <h3>Enrollment Summary</h3>
+          <p>Total Enrolled Students: {roleCounts.totalEnrolled}</p>
+          <p>Leads: {roleCounts.leads}</p>
+          <p>Follows: {roleCounts.follows}</p>
+          {roleCounts.unknown > 0 && <p>Unspecified Role: {roleCounts.unknown}</p>}
+        </div>
+      ) : null}
+      
       {error && <ErrorMessage message={error} />}
       
       {Array.isArray(students) && students.length === 0 ? (
@@ -121,6 +145,7 @@ const StudentList = ({ onSelectStudent }) => {
             <tr>
               <th>Name</th>
               <th>Email</th>
+              <th>Dance Role</th>
               <th>Status</th>
               <th>Balance</th>
               <th>Actions</th>
@@ -131,6 +156,7 @@ const StudentList = ({ onSelectStudent }) => {
               <tr key={student.id} data-testid={`student-row-${student.id}`}>
                 <td>{`${student.firstName || ''} ${student.lastName || ''}`}</td>
                 <td>{student.email}</td>
+                <td>{student.danceRole || 'Lead'}</td>
                 <td>
                   <select
                     value={student.enrollmentStatus || 'Pending Payment'}
