@@ -41,7 +41,30 @@ export default class StudentService {
       throw new Error(`Invalid status: ${newStatus}. Must be one of: ${validStatuses.join(", ")}`);
     }
 
-    // Update student status
+    // Special handling for setting to Inactive status - freeze fees
+    if (newStatus === "Inactive") {
+      const student = await this.getStudentById(studentId);
+      if (!student) {
+        throw new Error("Student not found");
+      }
+
+      // Get accurate balance calculation
+      const { reportService } = await import("./ReportService");
+      const balanceInfo = await reportService.calculateStudentBalance(studentId);
+      
+      // Ensure balance is never negative
+      const frozenBalance = Math.max(0, balanceInfo.calculatedBalance);
+
+      // Update student status and store frozen fee information
+      return this.studentRepository.updateStudent(studentId, { 
+        enrollmentStatus: newStatus,
+        frozenFeesTotal: balanceInfo.totalFeesCharged,
+        frozenBalance: frozenBalance,
+        frozenAt: new Date().toISOString()
+      });
+    }
+
+    // Standard update for all other statuses
     return this.studentRepository.updateStudent(studentId, { enrollmentStatus: newStatus });
   }
 
