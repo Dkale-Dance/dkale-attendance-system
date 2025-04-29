@@ -71,6 +71,9 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
   );
 };
 
+// Constants
+const SUCCESS_MESSAGE_TIMEOUT = 3000; // 3 seconds
+
 const PublicDashboard = ({ userRole }) => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -264,7 +267,7 @@ const PublicDashboard = ({ userRole }) => {
     if (success) {
       const timer = setTimeout(() => {
         setSuccess('');
-      }, 3000); // Hide after 3 seconds
+      }, SUCCESS_MESSAGE_TIMEOUT);
       
       return () => clearTimeout(timer);
     }
