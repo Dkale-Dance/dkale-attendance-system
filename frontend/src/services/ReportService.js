@@ -1017,8 +1017,33 @@ export default class ReportService {
       // We'll use the remaining payment amount to cover fees in chronological order
       let remainingPaymentAmount = totalPaymentsMade;
       
-      // Calculate fees from attendance for display with payment status
-      const feeHistory = attendanceHistory
+      // Convert attendance history to a map of dates for easy lookup
+      const attendanceDateMap = new Map();
+      attendanceHistory.forEach(record => {
+        const dateKey = record.date.toISOString().split('T')[0];
+        attendanceDateMap.set(dateKey, record);
+      });
+      
+      // Create a map of all payment dates that might not have corresponding attendance records
+      const paymentDatesWithoutAttendance = new Map();
+      paymentHistory.forEach(payment => {
+        const paymentDate = new Date(payment.date);
+        const dateKey = paymentDate.toISOString().split('T')[0];
+        // Check if this payment date has no corresponding attendance record
+        if (!attendanceDateMap.has(dateKey)) {
+          // Store payment amount keyed by date
+          if (!paymentDatesWithoutAttendance.has(dateKey)) {
+            paymentDatesWithoutAttendance.set(dateKey, {
+              date: paymentDate,
+              amount: payment.amount,
+              notes: payment.notes || ''
+            });
+          }
+        }
+      });
+      
+      // First, map regular attendance records to fee history entries
+      const attendanceFeeHistory = attendanceHistory
         .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date ascending
         .map(record => {
           const fee = this.attendanceService.calculateAttendanceFee(
@@ -1054,6 +1079,28 @@ export default class ReportService {
             remainingAmount: fee - paidAmount
           };
         });
+      
+      // Now add synthetic fee entries for payments without attendance records
+      const syntheticFeeEntries = Array.from(paymentDatesWithoutAttendance.values())
+        .map(paymentInfo => {
+          // Create a synthetic fee entry with the payment amount as the fee
+          // and mark it as paid since we have a payment for it
+          return {
+            date: paymentInfo.date,
+            status: 'absent', // Assume absent since most fees come from absences
+            attributes: {},
+            fee: paymentInfo.amount,
+            paymentStatus: 'paid',
+            paidAmount: paymentInfo.amount,
+            remainingAmount: 0,
+            isSynthetic: true, // Flag to indicate this is a synthetic entry
+            notes: paymentInfo.notes
+          };
+        });
+      
+      // Combine both sets of fee history entries and sort by date
+      const feeHistory = [...attendanceFeeHistory, ...syntheticFeeEntries]
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
       
       return {
         student: {

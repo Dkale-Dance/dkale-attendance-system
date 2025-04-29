@@ -275,22 +275,36 @@ const PublicDashboard = ({ userRole }) => {
               </thead>
               <tbody>
                 {feesToDisplay.map((fee, index) => {
-                  // Generate reasons based on attributes
-                  let reason = fee.status === 'absent' ? 'Absence' : '';
+                  // Generate reasons based on attributes or use payment notes for synthetic entries
+                  let reason = '';
                   
-                  if (fee.attributes) {
-                    if (fee.attributes.late) reason = reason ? `${reason}, Late` : 'Late';
-                    if (fee.attributes.noShoes) reason = reason ? `${reason}, No Shoes` : 'No Shoes';
-                    if (fee.attributes.notInUniform) reason = reason ? `${reason}, Not In Uniform` : 'Not In Uniform';
+                  if (fee.isSynthetic && fee.notes) {
+                    // For synthetic entries (payments without attendance records), use the payment notes
+                    reason = fee.notes || 'Payment without attendance record';
+                  } else {
+                    // For regular entries, generate reason from attendance status and attributes
+                    reason = fee.status === 'absent' ? 'Absence' : '';
+                    
+                    if (fee.attributes) {
+                      if (fee.attributes.late) reason = reason ? `${reason}, Late` : 'Late';
+                      if (fee.attributes.noShoes) reason = reason ? `${reason}, No Shoes` : 'No Shoes';
+                      if (fee.attributes.notInUniform) reason = reason ? `${reason}, Not In Uniform` : 'Not In Uniform';
+                    }
                   }
                   
                   return (
                     <tr key={index} className={`fee-row fee-status-${fee.paymentStatus}`}>
                       <td>{formatDate(fee.date)}</td>
                       <td>
-                        <span className={`status-badge status-${fee.status === 'absent' ? 'inactive' : 'enrolled'}`}>
-                          {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
-                        </span>
+                        {fee.isSynthetic ? (
+                          <span className="status-badge status-special">
+                            Payment Only
+                          </span>
+                        ) : (
+                          <span className={`status-badge status-${fee.status === 'absent' ? 'inactive' : 'enrolled'}`}>
+                            {fee.status.charAt(0).toUpperCase() + fee.status.slice(1)}
+                          </span>
+                        )}
                       </td>
                       <td>{reason || 'N/A'}</td>
                       <td className={getFeeAmountClass(fee.paymentStatus)}>{formatCurrency(fee.fee)}</td>

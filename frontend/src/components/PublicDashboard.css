@@ -355,6 +355,11 @@
   color: #dc3545;
 }
 
+.status-special {
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9c27b0;
+}
+
 @media (max-width: 768px) {
   .dashboard-header {
     padding: 20px;
