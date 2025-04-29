@@ -53,6 +53,24 @@ const getFeeAmountClass = (paymentStatus) => {
   }
 };
 
+// Confirmation Modal component
+const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h3>{title}</h3>
+        <p>{message}</p>
+        <div className="modal-actions">
+          <button className="cancel-button" onClick={onCancel}>Cancel</button>
+          <button className="confirm-button" onClick={onConfirm}>Confirm</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PublicDashboard = ({ userRole }) => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -61,6 +79,12 @@ const PublicDashboard = ({ userRole }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showAllFees, setShowAllFees] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: () => {} 
+  });
   const navigate = useNavigateSafe();
   
   // Handle fee payment - navigate to the payment form with prefilled data
@@ -84,19 +108,27 @@ const PublicDashboard = ({ userRole }) => {
   };
 
   /**
-   * Handles the deletion of a payment record
+   * Shows confirmation modal for payment deletion
+   * @param {string} paymentId - The ID of the payment to delete
+   */
+  const confirmDeletePayment = (paymentId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Payment',
+      message: 'Are you sure you want to delete this payment?\n\nWARNING: This will INCREASE the student\'s balance.',
+      onConfirm: () => {
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        performDeletePayment(paymentId);
+      }
+    });
+  };
+  
+  /**
+   * Performs the actual payment deletion after confirmation
    * @param {string} paymentId - The ID of the payment to delete
    * @returns {Promise<void>}
    */
-  const handleDeletePayment = async (paymentId) => {
-    // Display a clear confirmation message with warning about balance impact
-    if (!window.confirm(
-      'Are you sure you want to delete this payment?\n\n' +
-      'WARNING: This will INCREASE the student\'s balance.'
-    )) {
-      return;
-    }
-    
+  const performDeletePayment = async (paymentId) => {
     try {
       setLoading(true);
       setError(''); // Clear any previous errors
@@ -119,22 +151,31 @@ const PublicDashboard = ({ userRole }) => {
   };
   
   /**
-   * Handles the deletion of a fee record (attendance record)
+   * Shows confirmation modal for fee deletion
+   * @param {Date|string} feeDate - The date of the fee to delete
+   * @param {boolean} isSynthetic - Whether this is a synthetic fee entry
+   */
+  const confirmDeleteFee = (feeDate, isSynthetic) => {
+    if (!selectedStudent) return;
+    
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Fee Record',
+      message: 'Are you sure you want to delete this fee record?\n\nWARNING: This will DECREASE the student\'s balance.',
+      onConfirm: () => {
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        performDeleteFee(feeDate, isSynthetic);
+      }
+    });
+  };
+  
+  /**
+   * Performs the actual fee deletion after confirmation
    * @param {Date|string} feeDate - The date of the fee to delete
    * @param {boolean} isSynthetic - Whether this is a synthetic fee entry (from payment without attendance)
    * @returns {Promise<void>}
    */
-  const handleDeleteFee = async (feeDate, isSynthetic) => {
-    if (!selectedStudent) return;
-    
-    // Display a clear confirmation message with warning about balance impact
-    if (!window.confirm(
-      'Are you sure you want to delete this fee record?\n\n' +
-      'WARNING: This will DECREASE the student\'s balance.'
-    )) {
-      return;
-    }
-    
+  const performDeleteFee = async (feeDate, isSynthetic) => {
     try {
       setLoading(true);
       setError(''); // Clear any previous errors
@@ -228,6 +269,11 @@ const PublicDashboard = ({ userRole }) => {
       return () => clearTimeout(timer);
     }
   }, [success]);
+  
+  // Handle modal close
+  const handleCloseModal = () => {
+    setConfirmModal({ ...confirmModal, isOpen: false });
+  };
 
   // Clear selection and go back to the student list
   const handleBackToList = () => {
@@ -337,7 +383,7 @@ const PublicDashboard = ({ userRole }) => {
                     {userRole === 'admin' && (
                       <td>
                         <button 
-                          onClick={() => handleDeletePayment(payment.id)}
+                          onClick={() => confirmDeletePayment(payment.id)}
                           className="delete-button"
                           data-testid={`delete-payment-${payment.id}`}
                         >
@@ -449,7 +495,7 @@ const PublicDashboard = ({ userRole }) => {
                           
                           {userRole === 'admin' && (
                             <button 
-                              onClick={() => handleDeleteFee(fee.date, fee.isSynthetic)}
+                              onClick={() => confirmDeleteFee(fee.date, fee.isSynthetic)}
                               className="delete-button"
                               data-testid={`delete-fee-${index}`}
                               title={fee.isSynthetic ? "Delete original payment record" : "Delete this fee record"}
@@ -545,6 +591,15 @@ const PublicDashboard = ({ userRole }) => {
           {selectedStudent ? renderStudentDetails() : renderStudentList()}
         </>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={handleCloseModal}
+      />
     </div>
   );
 };
