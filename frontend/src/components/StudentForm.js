@@ -9,7 +9,8 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
     lastName: student?.lastName || '',
     email: student?.email || '',
     enrollmentStatus: student?.enrollmentStatus || 'Pending Payment',
-    balance: student?.balance || 0
+    balance: student?.balance || 0,
+    danceRole: student?.danceRole || 'Lead'
   });
   
   const [error, setError] = useState('');
@@ -94,6 +95,20 @@ const StudentForm = ({ student, onSubmit, buttonText = "Save", isAdminView = fal
                 <option value="Inactive">Inactive</option>
                 <option value="Pending Payment">Pending Payment</option>
                 <option value="Removed">Removed</option>
+              </select>
+            </div>
+            
+            <div className={styles['form-group']}>
+              <label htmlFor="danceRole">Dance Role</label>
+              <select
+                id="danceRole"
+                name="danceRole"
+                value={formData.danceRole}
+                onChange={handleChange}
+                data-testid="student-dance-role-select"
+              >
+                <option value="Lead">Lead</option>
+                <option value="Follow">Follow</option>
               </select>
             </div>
             
