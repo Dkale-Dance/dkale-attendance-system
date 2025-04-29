@@ -13,8 +13,11 @@ export default class PaymentService {
   
   /**
    * Deletes a payment and updates the student's balance
+   * Used by the PublicDashboard to allow admins to remove incorrect payment entries
+   * and properly adjust the student's balance
    * @param {string} paymentId - The payment ID to delete
-   * @returns {Promise<Object>} Result of the operation
+   * @returns {Promise<Object>} Result containing success status, deleted payment, and updated student
+   * @throws {Error} If the payment is not found, student is not found, or deletion fails
    */
   async deletePayment(paymentId) {
     try {

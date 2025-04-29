@@ -12,9 +12,10 @@ export default class AttendanceService {
   
   /**
    * Removes a fee record and adjusts the student's balance accordingly
-   * @param {Date} date - The date of the fee/attendance
+   * Used by the PublicDashboard to allow admins to delete fee entries and update balances
+   * @param {Date} date - The date of the fee/attendance record to remove
    * @param {string} studentId - The student's ID
-   * @returns {Promise<Object>} Result of the operation
+   * @returns {Promise<Object>} Result containing status, previous record details, and balance adjustment
    */
   async removeFeeRecord(date, studentId) {
     try {

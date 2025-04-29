@@ -134,6 +134,23 @@
   justify-content: flex-start;
 }
 
+.success-message {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.success-message::before {
+  content: "✓";
+  font-weight: bold;
+  margin-right: 8px;
+}
+
 .paid-amount {
   color: #28a745;
   font-weight: bold;

@@ -15,7 +15,8 @@ export class AttendanceRepository {
   
   /**
    * Removes a fee record (attendance record) for a specific student and date
-   * @param {Date} date - The date of the fee/attendance
+   * Used by the PublicDashboard to allow admins to delete fee entries
+   * @param {Date} date - The date of the fee/attendance record to remove
    * @param {string} studentId - The student's ID
    * @returns {Promise<Object|null>} The removed record or null if not found
    */

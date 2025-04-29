@@ -59,6 +59,7 @@ const PublicDashboard = ({ userRole }) => {
   const [studentDetails, setStudentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showAllFees, setShowAllFees] = useState(false);
   const navigate = useNavigateSafe();
   
@@ -82,14 +83,23 @@ const PublicDashboard = ({ userRole }) => {
     navigate('/payments?action=pay');
   };
 
-  // Handle payment deletion
+  /**
+   * Handles the deletion of a payment record
+   * @param {string} paymentId - The ID of the payment to delete
+   * @returns {Promise<void>}
+   */
   const handleDeletePayment = async (paymentId) => {
-    if (!window.confirm('Are you sure you want to delete this payment? This will increase the student\'s balance.')) {
+    // Display a clear confirmation message with warning about balance impact
+    if (!window.confirm(
+      'Are you sure you want to delete this payment?\n\n' +
+      'WARNING: This will INCREASE the student\'s balance.'
+    )) {
       return;
     }
     
     try {
       setLoading(true);
+      setError(''); // Clear any previous errors
       await paymentService.deletePayment(paymentId);
       
       // Refresh student details after deletion
@@ -98,8 +108,9 @@ const PublicDashboard = ({ userRole }) => {
         setStudentDetails(details);
       }
       
-      alert('Payment deleted successfully');
+      setSuccess('Payment deleted successfully');
     } catch (err) {
+      setSuccess(''); // Clear any previous success messages
       setError(`Failed to delete payment: ${err.message}`);
       console.error('Error deleting payment:', err);
     } finally {
@@ -107,16 +118,27 @@ const PublicDashboard = ({ userRole }) => {
     }
   };
   
-  // Handle fee deletion (attendance record)
+  /**
+   * Handles the deletion of a fee record (attendance record)
+   * @param {Date|string} feeDate - The date of the fee to delete
+   * @param {boolean} isSynthetic - Whether this is a synthetic fee entry (from payment without attendance)
+   * @returns {Promise<void>}
+   */
   const handleDeleteFee = async (feeDate, isSynthetic) => {
     if (!selectedStudent) return;
     
-    if (!window.confirm('Are you sure you want to delete this fee record? This will reduce the student\'s balance.')) {
+    // Display a clear confirmation message with warning about balance impact
+    if (!window.confirm(
+      'Are you sure you want to delete this fee record?\n\n' +
+      'WARNING: This will DECREASE the student\'s balance.'
+    )) {
       return;
     }
     
     try {
       setLoading(true);
+      setError(''); // Clear any previous errors
+      setSuccess(''); // Clear any previous success messages
       
       // For synthetic fee entries, we don't have a real attendance record to delete
       if (isSynthetic) {
@@ -124,7 +146,7 @@ const PublicDashboard = ({ userRole }) => {
         // The synthetic entry was based on a payment, which would now show in the fee history properly
         const details = await reportService.getStudentFinancialDetails(selectedStudent);
         setStudentDetails(details);
-        alert('Synthetic fee record cannot be directly deleted. Please delete the associated payment instead.');
+        setError('Synthetic fee record cannot be directly deleted. Please delete the associated payment instead.');
         return;
       }
       
@@ -136,8 +158,9 @@ const PublicDashboard = ({ userRole }) => {
       const details = await reportService.getStudentFinancialDetails(selectedStudent);
       setStudentDetails(details);
       
-      alert('Fee record deleted successfully');
+      setSuccess('Fee record deleted successfully');
     } catch (err) {
+      setSuccess(''); // Ensure success is cleared in case of error
       setError(`Failed to delete fee record: ${err.message}`);
       console.error('Error deleting fee record:', err);
     } finally {
@@ -150,6 +173,7 @@ const PublicDashboard = ({ userRole }) => {
     const fetchStudentData = async () => {
       setLoading(true);
       setError('');
+      setSuccess('');
       
       try {
         const studentData = await reportService.getPublicDashboardData();
@@ -172,6 +196,7 @@ const PublicDashboard = ({ userRole }) => {
       
       setLoading(true);
       setError('');
+      setSuccess('');
       
       try {
         const details = await reportService.getStudentFinancialDetails(selectedStudent);
@@ -192,6 +217,17 @@ const PublicDashboard = ({ userRole }) => {
   const handleSelectStudent = (studentId) => {
     setSelectedStudent(studentId);
   };
+  
+  // Auto-hide success messages after a delay
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess('');
+      }, 3000); // Hide after 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   // Clear selection and go back to the student list
   const handleBackToList = () => {
@@ -497,6 +533,7 @@ const PublicDashboard = ({ userRole }) => {
       </div>
       
       {error && <ErrorMessage message={error} />}
+      {success && <div className="success-message" data-testid="success-message">{success}</div>}
       
       {loading ? (
         <div className="loading" data-testid="loading-indicator">

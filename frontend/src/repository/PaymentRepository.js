@@ -15,9 +15,11 @@ export class PaymentRepository {
   }
   
   /**
-   * Deletes a payment record
+   * Deletes a payment record from the database
+   * Used by the PublicDashboard to allow admins to remove incorrect payment entries
    * @param {string} paymentId - The payment ID to delete
    * @returns {Promise<void>}
+   * @throws {Error} If deletion fails
    */
   async deletePayment(paymentId) {
     try {
