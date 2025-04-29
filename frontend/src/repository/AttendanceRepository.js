@@ -12,6 +12,23 @@ export class AttendanceRepository {
     }
     this.collectionName = "attendance";
   }
+  
+  /**
+   * Removes a fee record (attendance record) for a specific student and date
+   * @param {Date} date - The date of the fee/attendance
+   * @param {string} studentId - The student's ID
+   * @returns {Promise<Object|null>} The removed record or null if not found
+   */
+  async removeFeeRecord(date, studentId) {
+    try {
+      // This is the same as removeAttendance but with a different name
+      // to clarify its purpose in the fee-related context
+      return this.removeAttendance(date, studentId);
+    } catch (error) {
+      console.error("Error removing fee record:", error);
+      throw new Error(`Failed to remove fee record: ${error.message}`);
+    }
+  }
 
   /**
    * Formats a date as YYYY-MM-DD for use as a document ID

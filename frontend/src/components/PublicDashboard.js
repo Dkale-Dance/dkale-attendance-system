@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../services/ReportService';
 import { paymentService } from '../services/PaymentService';
+import { attendanceService } from '../services/AttendanceService';
 import ErrorMessage from './ErrorMessage';
 import { useNavigate } from 'react-router-dom';
 import './PublicDashboard.css'; // Using the new CSS file
@@ -101,6 +102,44 @@ const PublicDashboard = ({ userRole }) => {
     } catch (err) {
       setError(`Failed to delete payment: ${err.message}`);
       console.error('Error deleting payment:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle fee deletion (attendance record)
+  const handleDeleteFee = async (feeDate, isSynthetic) => {
+    if (!selectedStudent) return;
+    
+    if (!window.confirm('Are you sure you want to delete this fee record? This will reduce the student\'s balance.')) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // For synthetic fee entries, we don't have a real attendance record to delete
+      if (isSynthetic) {
+        // Just refresh the student details to reflect any changes 
+        // The synthetic entry was based on a payment, which would now show in the fee history properly
+        const details = await reportService.getStudentFinancialDetails(selectedStudent);
+        setStudentDetails(details);
+        alert('Synthetic fee record cannot be directly deleted. Please delete the associated payment instead.');
+        return;
+      }
+      
+      // For real fee entries, remove the underlying attendance record
+      const date = new Date(feeDate);
+      await attendanceService.removeFeeRecord(date, selectedStudent);
+      
+      // Refresh student details
+      const details = await reportService.getStudentFinancialDetails(selectedStudent);
+      setStudentDetails(details);
+      
+      alert('Fee record deleted successfully');
+    } catch (err) {
+      setError(`Failed to delete fee record: ${err.message}`);
+      console.error('Error deleting fee record:', err);
     } finally {
       setLoading(false);
     }
@@ -360,15 +399,29 @@ const PublicDashboard = ({ userRole }) => {
                         }
                       </td>
                       <td>
-                        {(fee.paymentStatus === 'unpaid' || fee.paymentStatus === 'partial') && userRole === 'admin' && (
-                          <button 
-                            onClick={() => handlePayFee(fee)}
-                            className="pay-button"
-                            data-testid={`pay-fee-${index}`}
-                          >
-                            Pay
-                          </button>
-                        )}
+                        <div className="action-buttons">
+                          {(fee.paymentStatus === 'unpaid' || fee.paymentStatus === 'partial') && userRole === 'admin' && (
+                            <button 
+                              onClick={() => handlePayFee(fee)}
+                              className="pay-button"
+                              data-testid={`pay-fee-${index}`}
+                              title="Pay this fee"
+                            >
+                              Pay
+                            </button>
+                          )}
+                          
+                          {userRole === 'admin' && (
+                            <button 
+                              onClick={() => handleDeleteFee(fee.date, fee.isSynthetic)}
+                              className="delete-button"
+                              data-testid={`delete-fee-${index}`}
+                              title={fee.isSynthetic ? "Delete original payment record" : "Delete this fee record"}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

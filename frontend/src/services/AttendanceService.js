@@ -9,6 +9,23 @@ export default class AttendanceService {
     this.studentRepository = studentRepository;
     this.studentService = studentServiceInstance;
   }
+  
+  /**
+   * Removes a fee record and adjusts the student's balance accordingly
+   * @param {Date} date - The date of the fee/attendance
+   * @param {string} studentId - The student's ID
+   * @returns {Promise<Object>} Result of the operation
+   */
+  async removeFeeRecord(date, studentId) {
+    try {
+      // This is essentially the same as removeAttendanceWithFeeAdjustment
+      // but with a different name for clarity in the fee-related context
+      return this.removeAttendanceWithFeeAdjustment(date, studentId);
+    } catch (error) {
+      console.error("Error removing fee record:", error);
+      throw new Error(`Failed to remove fee record: ${error.message}`);
+    }
+  }
 
   /**
    * Get raw attendance data for a specific date
