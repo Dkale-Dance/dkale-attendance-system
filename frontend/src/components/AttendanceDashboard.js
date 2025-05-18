@@ -234,6 +234,20 @@ const AttendanceDashboard = ({ userRole }) => {
     return attendanceData.filter(student => selectedStudents.includes(student.id));
   }, [attendanceData, selectedStudents]);
   
+  // Calculate role counts for present students
+  const roleCounts = useMemo(() => {
+    const presentStudents = attendanceData.filter(student => 
+      student.attendance?.status === 'present'
+    );
+    
+    return {
+      totalPresent: presentStudents.length,
+      leads: presentStudents.filter(student => student.danceRole === 'Lead').length,
+      follows: presentStudents.filter(student => student.danceRole === 'Follow').length,
+      unknown: presentStudents.filter(student => !student.danceRole).length
+    };
+  }, [attendanceData]);
+  
   // Only admin can access the attendance dashboard
   if (userRole !== 'admin') {
     return (
@@ -260,6 +274,7 @@ const AttendanceDashboard = ({ userRole }) => {
           />
         </div>
       </div>
+      
       
       {error && <ErrorMessage message={error} />}
       
@@ -310,6 +325,7 @@ const AttendanceDashboard = ({ userRole }) => {
                 </th>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Dance Role</th>
                 <th>Attendance & Fee Attributes</th>
               </tr>
             </thead>

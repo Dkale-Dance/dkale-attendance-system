@@ -71,6 +71,7 @@ const mockStudentRepository = {
         enrollmentStatus: "Pending Payment",
         balance: 0,
         role: "student",
+        danceRole: "Lead",
         ...initialData
       };
       

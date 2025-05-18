@@ -31,7 +31,8 @@ describe('StudentForm', () => {
       lastName: 'Doe',
       email: 'john.doe@example.com',
       enrollmentStatus: 'Enrolled',
-      balance: 100
+      balance: 100,
+      danceRole: 'Follow'
     };
     
     render(<StudentForm student={mockStudent} onSubmit={mockOnSubmit} isAdminView={true} />);
@@ -43,6 +44,7 @@ describe('StudentForm', () => {
     
     // Admin view fields should be present
     expect(screen.getByTestId('student-status-select')).toHaveValue('Enrolled');
+    expect(screen.getByTestId('student-dance-role-select')).toHaveValue('Follow');
     expect(screen.getByTestId('student-balance-input')).toHaveValue(100);
   });
 
@@ -51,6 +53,7 @@ describe('StudentForm', () => {
     
     // Admin fields should be present
     expect(screen.getByTestId('student-status-select')).toBeInTheDocument();
+    expect(screen.getByTestId('student-dance-role-select')).toBeInTheDocument();
     expect(screen.getByTestId('student-balance-input')).toBeInTheDocument();
   });
 
@@ -78,7 +81,8 @@ describe('StudentForm', () => {
         lastName: 'Smith',
         email: 'jane.smith@example.com',
         enrollmentStatus: 'Pending Payment',
-        balance: 0
+        balance: 0,
+        danceRole: 'Lead'
       });
     });
   });

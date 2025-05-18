@@ -22,6 +22,7 @@ export default class StudentService {
         enrollmentStatus: "Pending Payment",
         balance: 0,
         role: "student", // Always ensure role is explicitly set
+        danceRole: "Lead", // Default to Lead role
         ...initialData
       };
 

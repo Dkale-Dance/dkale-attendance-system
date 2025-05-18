@@ -102,6 +102,7 @@ const StudentAttendanceRow = ({
         )}
       </td>
       <td onClick={toggleExpanded}>{student.email}</td>
+      <td onClick={toggleExpanded}>{student.danceRole || 'Lead'}</td>
       <td>
         <div className={styles['attendance-section']}>
           {/* Primary Status */}
