@@ -95,9 +95,8 @@ const StudentList = ({ onSelectStudent }) => {
     
     return {
       totalEnrolled: enrolledStudents.length,
-      leads: enrolledStudents.filter(student => student.danceRole === 'Lead').length,
-      follows: enrolledStudents.filter(student => student.danceRole === 'Follow').length,
-      unknown: enrolledStudents.filter(student => !student.danceRole).length
+      leads: enrolledStudents.filter(student => !student.danceRole || student.danceRole === 'Lead').length,
+      follows: enrolledStudents.filter(student => student.danceRole === 'Follow').length
     };
   }, [students]);
 
@@ -131,7 +130,6 @@ const StudentList = ({ onSelectStudent }) => {
           <p>Total Enrolled Students: {roleCounts.totalEnrolled}</p>
           <p>Leads: {roleCounts.leads}</p>
           <p>Follows: {roleCounts.follows}</p>
-          {roleCounts.unknown > 0 && <p>Unspecified Role: {roleCounts.unknown}</p>}
         </div>
       ) : null}
       
