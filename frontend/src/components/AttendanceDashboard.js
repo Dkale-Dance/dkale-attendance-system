@@ -275,15 +275,6 @@ const AttendanceDashboard = ({ userRole }) => {
         </div>
       </div>
       
-      {!loading && (
-        <div className={styles['role-summary']} data-testid="role-summary">
-          <h3>Today's Attendance</h3>
-          <p>Present Students: {roleCounts.totalPresent}</p>
-          <p>Leads Present: {roleCounts.leads}</p>
-          <p>Follows Present: {roleCounts.follows}</p>
-          {roleCounts.unknown > 0 && <p>Unspecified Role: {roleCounts.unknown}</p>}
-        </div>
-      )}
       
       {error && <ErrorMessage message={error} />}
       
