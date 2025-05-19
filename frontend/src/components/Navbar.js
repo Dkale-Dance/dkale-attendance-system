@@ -138,11 +138,6 @@ const PublicNavbar = ({ isExpanded, toggleNavbar }) => (
       data-testid="public-nav-links"
     >
       <NavLink 
-        key="public-dashboard" 
-        label="Public Dashboard" 
-        to="/public-dashboard"
-      />
-      <NavLink 
         key="login" 
         label="Login" 
         to="/"
