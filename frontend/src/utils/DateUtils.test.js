@@ -6,7 +6,9 @@ import {
   createDateFromComponents,
   parseDateString,
   areDatesEqual,
-  getTodayDate
+  getTodayDate,
+  addDays,
+  addMonths
 } from './DateUtils';
 
 // Mock Firestore Timestamp object
@@ -162,6 +164,151 @@ describe('DateUtils', () => {
       
       // Restore original Date.now
       Date.now = originalNow;
+    });
+  });
+  
+  describe('addDays', () => {
+    it('adds days to a date', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 4, 15); // May 15, 2025
+      const result = addDays(baseDate, 5);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(4); // May is month 4 (0-indexed)
+      expect(result.getDate()).toBe(20); // 15 + 5 = 20
+    });
+    
+    it('handles negative days correctly', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 4, 15); // May 15, 2025
+      const result = addDays(baseDate, -10);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(4); // May is month 4 (0-indexed)
+      expect(result.getDate()).toBe(5); // 15 - 10 = 5
+    });
+    
+    it('handles month transitions when adding days', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 4, 29); // May 29, 2025
+      const result = addDays(baseDate, 5);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(5); // June is month 5 (0-indexed)
+      expect(result.getDate()).toBe(3); // May 29 + 5 days = June 3
+    });
+    
+    it('handles month transitions when subtracting days', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 5, 2); // June 2, 2025
+      const result = addDays(baseDate, -5);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(4); // May is month 4 (0-indexed)
+      expect(result.getDate()).toBe(28); // June 2 - 5 days = May 28
+    });
+    
+    it('handles year transitions', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 11, 30); // December 30, 2025
+      const result = addDays(baseDate, 5);
+      expect(result.getFullYear()).toBe(2026);
+      expect(result.getMonth()).toBe(0); // January is month 0
+      expect(result.getDate()).toBe(4); // Dec 30 + 5 days = Jan 4
+    });
+    
+    it('returns null for invalid input dates', () => {
+      expect(addDays(null, 5)).toBeNull();
+      expect(addDays(undefined, 5)).toBeNull();
+      expect(addDays('invalid-date', 5)).toBeNull();
+    });
+  });
+  
+  describe('addMonths', () => {
+    it('adds months to a date', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 4, 15); // May 15, 2025
+      const result = addMonths(baseDate, 3);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(7); // August is month 7 (0-indexed)
+      expect(result.getDate()).toBe(15); // Same day of month
+    });
+    
+    it('handles negative months correctly', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 4, 15); // May 15, 2025
+      const result = addMonths(baseDate, -2);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(2); // March is month 2 (0-indexed)
+      expect(result.getDate()).toBe(15); // Same day of month
+    });
+    
+    it('handles year transitions when adding months', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 10, 15); // November 15, 2025
+      const result = addMonths(baseDate, 3);
+      expect(result.getFullYear()).toBe(2026);
+      expect(result.getMonth()).toBe(1); // February is month 1 (0-indexed)
+      expect(result.getDate()).toBe(15); // Same day of month
+    });
+    
+    it('handles year transitions when subtracting months', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 0, 15); // January 15, 2025
+      const result = addMonths(baseDate, -3);
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getMonth()).toBe(9); // October is month 9 (0-indexed)
+      expect(result.getDate()).toBe(15); // Same day of month
+    });
+    
+    it('handles adding many months', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 4, 15); // May 15, 2025
+      const result = addMonths(baseDate, 15); // 1 year and 3 months
+      expect(result.getFullYear()).toBe(2026);
+      expect(result.getMonth()).toBe(7); // August is month 7 (0-indexed)
+      expect(result.getDate()).toBe(15); // Same day of month
+    });
+    
+    it('handles subtracting many months', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 4, 15); // May 15, 2025
+      const result = addMonths(baseDate, -15); // 1 year and 3 months backward
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getMonth()).toBe(1); // February is month 1 (0-indexed)
+      expect(result.getDate()).toBe(15); // Same day of month
+    });
+    
+    it('handles month-end edge cases (30-day months)', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 0, 31); // January 31, 2025
+      // April has 30 days
+      const result = addMonths(baseDate, 3);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(3); // April is month 3 (0-indexed)
+      expect(result.getDate()).toBe(30); // Last day of April
+    });
+    
+    it('handles month-end edge cases (February in non-leap year)', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2025, 0, 31); // January 31, 2025 (non-leap year)
+      // February 2025 has 28 days
+      const result = addMonths(baseDate, 1);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(1); // February is month 1 (0-indexed)
+      expect(result.getDate()).toBe(28); // Last day of February 2025
+    });
+    
+    it('handles month-end edge cases (February in leap year)', () => {
+      // Create a date with specific components to avoid timezone issues
+      const baseDate = new Date(2024, 0, 31); // January 31, 2024 (leap year)
+      // February 2024 has 29 days
+      const result = addMonths(baseDate, 1);
+      expect(result.getFullYear()).toBe(2024);
+      expect(result.getMonth()).toBe(1); // February is month 1 (0-indexed)
+      expect(result.getDate()).toBe(29); // Last day of February 2024
+    });
+    
+    it('returns null for invalid input dates', () => {
+      expect(addMonths(null, 3)).toBeNull();
+      expect(addMonths(undefined, 3)).toBeNull();
+      expect(addMonths('invalid-date', 3)).toBeNull();
     });
   });
 });

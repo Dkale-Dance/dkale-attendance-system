@@ -191,3 +191,77 @@ export const getTodayDate = () => {
   today.setHours(0, 0, 0, 0);
   return today;
 };
+
+/**
+ * Safely adds the specified number of days to a date
+ * @param {Date|string} date - The starting date
+ * @param {number} days - Number of days to add (can be negative)
+ * @returns {Date} A new date with the days added
+ */
+export const addDays = (date, days) => {
+  if (!date) return null;
+  
+  // Normalize the input date
+  const normalizedDate = normalizeDate(date);
+  if (!normalizedDate) return null;
+  
+  // Create a new date object to avoid modifying the original
+  const result = new Date(normalizedDate);
+  
+  // Add the specified number of days
+  result.setDate(result.getDate() + days);
+  
+  return result;
+};
+
+/**
+ * Safely adds the specified number of months to a date, handling month-end edge cases
+ * @param {Date|string} date - The starting date
+ * @param {number} months - Number of months to add (can be negative)
+ * @returns {Date} A new date with the months added
+ */
+export const addMonths = (date, months) => {
+  if (!date) return null;
+  
+  // Normalize the input date
+  const normalizedDate = normalizeDate(date);
+  if (!normalizedDate) return null;
+  
+  // Create a new date object to avoid modifying the original
+  const result = new Date(normalizedDate);
+  
+  // Get the original day of the month before we make changes
+  const originalDay = result.getDate();
+  
+  // Get the current month and year
+  const currentMonth = result.getMonth();
+  const currentYear = result.getFullYear();
+  
+  // Calculate the target month and year
+  let targetMonth = currentMonth + months;
+  let targetYear = currentYear;
+  
+  // Handle overflow and underflow of months
+  if (targetMonth > 11) {
+    targetYear += Math.floor(targetMonth / 12);
+    targetMonth = targetMonth % 12;
+  } else if (targetMonth < 0) {
+    // For negative months, we need to adjust the year and month calculation
+    const yearsToSubtract = Math.ceil(Math.abs(targetMonth) / 12);
+    targetYear -= yearsToSubtract;
+    targetMonth = 12 + (targetMonth % 12);
+    // If targetMonth is 12 after calculation, set it to 0 (January)
+    if (targetMonth === 12) targetMonth = 0;
+  }
+  
+  // Set the new month and year first
+  result.setFullYear(targetYear, targetMonth, 1);
+  
+  // Get the last day of the target month
+  const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  
+  // Set the day to either the original day or the last day of the month if the original day doesn't exist
+  result.setDate(Math.min(originalDay, lastDay));
+  
+  return result;
+};
