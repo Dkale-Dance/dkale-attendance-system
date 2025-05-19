@@ -22,6 +22,15 @@ const UserInfo = ({ user }) => (
 const NavigationLinks = ({ userRole, isExpanded }) => {
   const links = [];
 
+  // Add public dashboard link first for better mobile visibility
+  links.push(
+    <NavLink 
+      key="public-dashboard" 
+      label="Public Dashboard" 
+      to="/public-dashboard"
+    />
+  );
+
   // Home link for all authenticated users
   links.push(
     <NavLink 
@@ -83,15 +92,6 @@ const NavigationLinks = ({ userRole, isExpanded }) => {
       />
     );
   }
-  
-  // Public dashboard link for everyone
-  links.push(
-    <NavLink 
-      key="public-dashboard" 
-      label="Public Dashboard" 
-      to="/public-dashboard"
-    />
-  );
 
   return (
     <div 
@@ -141,11 +141,6 @@ const PublicNavbar = ({ isExpanded, toggleNavbar }) => (
         key="login" 
         label="Login" 
         to="/"
-      />
-      <NavLink 
-        key="public-dashboard" 
-        label="Public Dashboard" 
-        to="/public-dashboard"
       />
     </div>
   </div>

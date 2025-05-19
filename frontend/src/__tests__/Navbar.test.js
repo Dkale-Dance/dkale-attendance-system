@@ -43,9 +43,10 @@ describe('Navbar Component', () => {
     
     render(<Navbar user={null} userRole={null} onLogout={mockLogout} />);
     
-    // Public navbar should be visible with login link
+    // Public navbar should be visible with login link only
     expect(screen.getByText('Login')).toBeInTheDocument();
-    expect(screen.getByText('Public Dashboard')).toBeInTheDocument();
+    // Public Dashboard link should not be visible for unauthenticated users
+    expect(screen.queryByText('Public Dashboard')).not.toBeInTheDocument();
   });
 
   test('should render when user is authenticated', () => {
