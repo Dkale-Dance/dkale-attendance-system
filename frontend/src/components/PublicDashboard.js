@@ -5,6 +5,7 @@ import { attendanceService } from '../services/AttendanceService';
 import ErrorMessage from './ErrorMessage';
 import { useNavigate } from 'react-router-dom';
 import './PublicDashboard.css'; // Using the new CSS file
+import { formatDateForDisplay } from '../utils/DateUtils';
 
 // Fallback for tests
 const useNavigateSafe = () => {
@@ -294,11 +295,9 @@ const PublicDashboard = ({ userRole }) => {
     return `$${amount.toFixed(2)}`;
   };
 
-  // Format date values
+  // Format date values using the centralized date utilities
   const formatDate = (date) => {
-    if (!date) return 'N/A';
-    const dateObj = new Date(date);
-    return dateObj.toLocaleDateString();
+    return formatDateForDisplay(date);
   };
 
   // Calculate unpaid fees count

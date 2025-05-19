@@ -1,5 +1,6 @@
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy } from "firebase/firestore";
 import app from "../lib/firebase/config/config";
+import { parseDateString } from "../utils/DateUtils";
 
 export class ReportRepository {
   constructor() {
@@ -65,12 +66,30 @@ export class ReportRepository {
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
         
-        // Ensure date is a proper Date object
+        // Ensure date is a proper Date object with consistent handling
         let date = data.date;
+        
+        // Handle Firestore Timestamp objects
         if (date && typeof date.toDate === 'function') {
-          date = date.toDate();
+          // Convert to JavaScript Date and set to noon to avoid timezone shifts
+          const jsDate = date.toDate();
+          // Create new date at noon local time to avoid timezone issues
+          date = new Date(
+            jsDate.getFullYear(),
+            jsDate.getMonth(),
+            jsDate.getDate(),
+            12, 0, 0
+          );
         } else if (date) {
-          date = new Date(date);
+          // For regular Date objects or strings
+          const tempDate = new Date(date);
+          // Create new date at noon local time to avoid timezone issues
+          date = new Date(
+            tempDate.getFullYear(),
+            tempDate.getMonth(),
+            tempDate.getDate(),
+            12, 0, 0
+          );
         }
         
         return {
@@ -113,12 +132,30 @@ export class ReportRepository {
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
         
-        // Ensure date is a proper Date object
+        // Ensure date is a proper Date object with consistent handling
         let date = data.date;
+        
+        // Handle Firestore Timestamp objects
         if (date && typeof date.toDate === 'function') {
-          date = date.toDate();
+          // Convert to JavaScript Date and set to noon to avoid timezone shifts
+          const jsDate = date.toDate();
+          // Create new date at noon local time to avoid timezone issues
+          date = new Date(
+            jsDate.getFullYear(),
+            jsDate.getMonth(),
+            jsDate.getDate(),
+            12, 0, 0
+          );
         } else if (date) {
-          date = new Date(date);
+          // For regular Date objects or strings
+          const tempDate = new Date(date);
+          // Create new date at noon local time to avoid timezone issues
+          date = new Date(
+            tempDate.getFullYear(),
+            tempDate.getMonth(),
+            tempDate.getDate(),
+            12, 0, 0
+          );
         }
         
         return {
@@ -227,12 +264,30 @@ export class ReportRepository {
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
         
-        // Ensure date is a proper Date object
+        // Ensure date is a proper Date object with consistent handling
         let date = data.date;
+        
+        // Handle Firestore Timestamp objects
         if (date && typeof date.toDate === 'function') {
-          date = date.toDate();
+          // Convert to JavaScript Date and set to noon to avoid timezone shifts
+          const jsDate = date.toDate();
+          // Create new date at noon local time to avoid timezone issues
+          date = new Date(
+            jsDate.getFullYear(),
+            jsDate.getMonth(),
+            jsDate.getDate(),
+            12, 0, 0
+          );
         } else if (date) {
-          date = new Date(date);
+          // For regular Date objects or strings
+          const tempDate = new Date(date);
+          // Create new date at noon local time to avoid timezone issues
+          date = new Date(
+            tempDate.getFullYear(),
+            tempDate.getMonth(),
+            tempDate.getDate(),
+            12, 0, 0
+          );
         }
         
         return {
@@ -266,8 +321,10 @@ export class ReportRepository {
         
         // Check if this date's attendance contains data for our student
         if (data && data[studentId]) {
+          // Use parseDateString to ensure consistent date parsing
+          // This will create a date at noon local time to avoid timezone issues
           attendanceHistory.push({
-            date: new Date(dateStr),
+            date: parseDateString(dateStr),
             id: doc.id,
             record: data[studentId]
           });
