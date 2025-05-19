@@ -3,6 +3,7 @@ import { studentRepository } from "../repository/StudentRepository";
 import { attendanceRepository } from "../repository/AttendanceRepository";
 import { attendanceService } from "../services/AttendanceService";
 import { sortByName } from "../utils/sorting";
+import { formatDateForDocId, parseDateString } from "../utils/DateUtils";
 
 // Utility function to format currency values
 export const formatCurrency = (amount) => {
@@ -1018,23 +1019,26 @@ export default class ReportService {
       let remainingPaymentAmount = totalPaymentsMade;
       
       // Convert attendance history to a map of dates for easy lookup
+      // Use our DateUtils for consistent date handling
       const attendanceDateMap = new Map();
       attendanceHistory.forEach(record => {
-        const dateKey = record.date.toISOString().split('T')[0];
+        // Format the date using our consistent DateUtils function
+        const dateKey = formatDateForDocId(record.date);
         attendanceDateMap.set(dateKey, record);
       });
       
       // Create a map of all payment dates that might not have corresponding attendance records
       const paymentDatesWithoutAttendance = new Map();
       paymentHistory.forEach(payment => {
-        const paymentDate = new Date(payment.date);
-        const dateKey = paymentDate.toISOString().split('T')[0];
+        // Format the date using our consistent DateUtils function
+        const dateKey = formatDateForDocId(payment.date);
+        
         // Check if this payment date has no corresponding attendance record
         if (!attendanceDateMap.has(dateKey)) {
           // Store payment amount keyed by date
           if (!paymentDatesWithoutAttendance.has(dateKey)) {
             paymentDatesWithoutAttendance.set(dateKey, {
-              date: paymentDate,
+              date: payment.date, // Use the original date object
               amount: payment.amount,
               notes: payment.notes || ''
             });
@@ -1044,7 +1048,12 @@ export default class ReportService {
       
       // First, map regular attendance records to fee history entries
       const attendanceFeeHistory = attendanceHistory
-        .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date ascending
+        .sort((a, b) => {
+          // Use consistent date parsing with our DateUtils
+          const dateA = a.date instanceof Date ? a.date : parseDateString(formatDateForDocId(a.date));
+          const dateB = b.date instanceof Date ? b.date : parseDateString(formatDateForDocId(b.date));
+          return dateA.getTime() - dateB.getTime(); // More reliable date comparison
+        })
         .map(record => {
           const fee = this.attendanceService.calculateAttendanceFee(
             record.record.status,
@@ -1099,8 +1108,14 @@ export default class ReportService {
         });
       
       // Combine both sets of fee history entries and sort by date
+      // Use a more robust date comparison with our DateUtils
       const feeHistory = [...attendanceFeeHistory, ...syntheticFeeEntries]
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+        .sort((a, b) => {
+          // Use consistent date parsing with our DateUtils
+          const dateA = a.date instanceof Date ? a.date : parseDateString(formatDateForDocId(a.date));
+          const dateB = b.date instanceof Date ? b.date : parseDateString(formatDateForDocId(b.date));
+          return dateA.getTime() - dateB.getTime();
+        });
       
       return {
         student: {

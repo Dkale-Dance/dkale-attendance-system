@@ -1,5 +1,6 @@
 import { getFirestore, doc, setDoc, getDoc, Timestamp } from "firebase/firestore";
 import app from "../lib/firebase/config/config";
+import { formatDateForDocId } from "../utils/DateUtils";
 
 export class AttendanceRepository {
   constructor() {
@@ -32,22 +33,13 @@ export class AttendanceRepository {
   }
 
   /**
-   * Formats a date as YYYY-MM-DD for use as a document ID
-   * @param {Date} date - The date to format
-   * @returns {string} Formatted date string
-   */
-  formatDateForDocId(date) {
-    return date.toISOString().split('T')[0];
-  }
-
-  /**
    * Fetches attendance records for a specific date
    * @param {Date} date - The date to get attendance for
    * @returns {Promise<Object>} Attendance data keyed by student ID
    */
   async getAttendanceByDate(date) {
     try {
-      const dateStr = this.formatDateForDocId(date);
+      const dateStr = formatDateForDocId(date);
       const attendanceRef = doc(this.db, this.collectionName, dateStr);
       const docSnap = await getDoc(attendanceRef);
       
@@ -95,7 +87,7 @@ export class AttendanceRepository {
    */
   async updateAttendance(date, studentId, status) {
     try {
-      const dateStr = this.formatDateForDocId(date);
+      const dateStr = formatDateForDocId(date);
       const attendanceRef = doc(this.db, this.collectionName, dateStr);
       
       // Create update data with the current timestamp
@@ -124,7 +116,7 @@ export class AttendanceRepository {
    */
   async bulkUpdateAttendance(date, studentIds, status) {
     try {
-      const dateStr = this.formatDateForDocId(date);
+      const dateStr = formatDateForDocId(date);
       const attendanceRef = doc(this.db, this.collectionName, dateStr);
       
       // Create update data for all students
@@ -156,7 +148,7 @@ export class AttendanceRepository {
    */
   async updateAttendanceWithAttributes(date, studentId, status, attributes) {
     try {
-      const dateStr = this.formatDateForDocId(date);
+      const dateStr = formatDateForDocId(date);
       const attendanceRef = doc(this.db, this.collectionName, dateStr);
       
       // Create update data with attributes
@@ -186,7 +178,7 @@ export class AttendanceRepository {
    */
   async bulkUpdateAttendanceWithAttributes(date, studentIds, status, attributes) {
     try {
-      const dateStr = this.formatDateForDocId(date);
+      const dateStr = formatDateForDocId(date);
       const attendanceRef = doc(this.db, this.collectionName, dateStr);
       
       // Create update data for all students with attributes
@@ -216,7 +208,7 @@ export class AttendanceRepository {
    */
   async removeAttendance(date, studentId) {
     try {
-      const dateStr = this.formatDateForDocId(date);
+      const dateStr = formatDateForDocId(date);
       const attendanceRef = doc(this.db, this.collectionName, dateStr);
       
       // Get the current attendance data

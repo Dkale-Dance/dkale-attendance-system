@@ -5,15 +5,7 @@ import StudentAttendanceRow from './StudentAttendanceRow';
 import BulkActionConfirmation from './BulkActionConfirmation';
 import ErrorMessage from './ErrorMessage';
 import styles from './AttendanceDashboard.module.css';
-
-/**
- * Formats a date string for the date input (YYYY-MM-DD)
- * @param {Date} date - The date to format
- * @returns {string} Formatted date string
- */
-const formatDateForInput = (date) => {
-  return date.toISOString().split('T')[0];
-};
+import { formatDateForInput } from '../utils/DateUtils';
 
 const AttendanceDashboard = ({ userRole }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -125,7 +117,12 @@ const AttendanceDashboard = ({ userRole }) => {
   
   // Handle date change
   const handleDateChange = (e) => {
-    const newDate = new Date(e.target.value);
+    // The value from the date input comes in YYYY-MM-DD format in local timezone
+    // By using Date constructor directly, it treats the string as UTC, causing the offset issue
+    // Instead, we'll parse the components to create a date in local timezone
+    const [year, month, day] = e.target.value.split('-').map(Number);
+    // Create date with local timezone (months are 0-indexed in JavaScript)
+    const newDate = new Date(year, month - 1, day, 12, 0, 0);
     setSelectedDate(newDate);
   };
   

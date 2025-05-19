@@ -1,5 +1,6 @@
 import { AttendanceRepository } from '../repository/AttendanceRepository';
 import { getFirestore, collection, doc, setDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import * as DateUtils from '../utils/DateUtils';
 
 // Mock Firebase
 jest.mock('firebase/firestore', () => ({
@@ -35,6 +36,11 @@ describe('AttendanceRepository', () => {
     query.mockReturnValue(mockQuery);
     getDocs.mockResolvedValue(mockQuerySnapshot);
     setDoc.mockResolvedValue();
+    
+    // Mock the formatDateForDocId function
+    jest.spyOn(DateUtils, 'formatDateForDocId').mockImplementation(date => {
+      return '2025-03-08'; // Return a fixed date string for tests
+    });
 
     attendanceRepository = new AttendanceRepository();
   });
