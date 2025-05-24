@@ -225,7 +225,7 @@ const AttendanceDashboard = ({ userRole }) => {
           
           // Add a small delay and process only once per date
           const dateKey = selectedDate.toDateString();
-          if (window.holidayProcessingInProgress && window.holidayProcessingInProgress[dateKey]) {
+          if (window.holidayProcessingInProgress?.[dateKey]) {
             console.log('Holiday processing already in progress for this date, skipping...');
             return;
           }

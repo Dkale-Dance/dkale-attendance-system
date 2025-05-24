@@ -91,6 +91,10 @@ export default class PaymentService {
       if (this.holidayService.isHoliday(paymentDate)) {
         const holidayName = this.holidayService.getHolidayName(paymentDate);
         console.warn(`Payment being recorded on ${holidayName}. Note: No fees should be charged on holidays.`);
+        
+        // Add holiday flag to payment data for later processing
+        paymentData.isHolidayPayment = true;
+        paymentData.holidayName = holidayName;
       }
     } else {
       throw new Error("Payment date is required");
@@ -101,6 +105,20 @@ export default class PaymentService {
    * Check if a payment date falls on a holiday
    * @param {Date|string} date - The payment date to check
    * @returns {Object} Holiday information
+   * 
+   * @example
+   * // Check if a specific date is a holiday
+   * const holidayStatus = paymentService.checkHolidayStatus(new Date('2025-05-02'));
+   * if (holidayStatus.isHoliday) {
+   *   console.log(`Payment date is on ${holidayStatus.holidayName}`);
+   * }
+   * 
+   * @example
+   * // Use in payment validation
+   * const status = paymentService.checkHolidayStatus(paymentData.date);
+   * if (!status.shouldChargeFees) {
+   *   console.warn('No fees should be charged on holidays');
+   * }
    */
   checkHolidayStatus(date) {
     const isHoliday = this.holidayService.isHoliday(date);

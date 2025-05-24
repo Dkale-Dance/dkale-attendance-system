@@ -120,33 +120,56 @@ export default class HolidayFeeAdjustmentService {
 
   async applyHolidayCredit(studentId, creditAmount) {
     try {
+      // Input validation
+      if (!studentId) {
+        throw new Error('Student ID is required');
+      }
+      if (!creditAmount || creditAmount <= 0) {
+        throw new Error('Credit amount must be positive');
+      }
+
       const student = await this.studentService.getStudentById(studentId);
       if (!student) {
-        throw new Error('Student not found');
+        throw new Error(`Student with ID ${studentId} not found`);
       }
 
       const holidayCredits = await this.getHolidayCreditsForStudent(studentId);
-      const totalAvailableCredit = holidayCredits.reduce((sum, credit) => sum + credit.amount, 0);
+      
+      // Recalculate available credit considering used amounts
+      const totalAvailableCredit = holidayCredits
+        .filter(credit => !credit.used)
+        .reduce((sum, credit) => sum + (credit.amount - (credit.usedAmount || 0)), 0);
       
       if (creditAmount > totalAvailableCredit) {
-        throw new Error(`Cannot apply credit of $${creditAmount}. Available holiday credit: $${totalAvailableCredit}`);
+        throw new Error(
+          `Cannot apply credit of $${creditAmount.toFixed(2)} for ${student.firstName} ${student.lastName}. ` +
+          `Available holiday credit: $${totalAvailableCredit.toFixed(2)}`
+        );
       }
 
       // Apply the credit by reducing balance
       const updatedStudent = await this.studentService.reduceBalance(studentId, creditAmount);
       
-      // Mark credits as used (implement this method in StudentService)
+      // Mark credits as used
       await this.studentService.markHolidayCreditsAsUsed(studentId, creditAmount);
+      
+      // Recalculate remaining credit after usage
+      const updatedHolidayCredits = await this.getHolidayCreditsForStudent(studentId);
+      const remainingCredit = updatedHolidayCredits
+        .filter(credit => !credit.used)
+        .reduce((sum, credit) => sum + (credit.amount - (credit.usedAmount || 0)), 0);
       
       return {
         studentId,
+        studentName: `${student.firstName} ${student.lastName}`,
         appliedAmount: creditAmount,
-        remainingCredit: totalAvailableCredit - creditAmount,
+        remainingCredit,
         updatedStudent
       };
     } catch (error) {
+      const errorMessage = error.message || 'Unknown error occurred';
       console.error(`Error applying holiday credit for student ${studentId}:`, error);
-      throw new Error(`Failed to apply holiday credit: ${error.message}`);
+      throw new Error(`Failed to apply holiday credit: ${errorMessage}`);
     }
   }
 }

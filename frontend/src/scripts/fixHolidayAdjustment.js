@@ -6,30 +6,43 @@ import { HolidayService } from '../services/HolidayService.js';
 import { HolidayFeeAdjustmentService } from '../services/HolidayFeeAdjustmentService.js';
 
 /**
- * Manual script to fix holiday adjustment for 5/2/2025
- * This will properly process Andres Naranjo's payment made on that date
+ * Manual script to fix holiday adjustment
+ * This will properly process payments made on holiday dates
+ * 
+ * @param {Date} targetDate - The holiday date to process
+ * @param {Object} services - Optional dependency injection object
+ * @param {Object} services.attendanceService - Attendance service instance
+ * @param {Object} services.paymentService - Payment service instance
+ * @param {Object} services.studentService - Student service instance
+ * @param {Object} services.holidayService - Holiday service instance
+ * @param {Object} services.holidayFeeAdjustmentService - Holiday fee adjustment service instance
  */
-export async function fixHolidayAdjustmentForMay2() {
+export async function fixHolidayAdjustment(
+  targetDate = new Date(2025, 4, 2), // Default to May 2, 2025
+  services = {}
+) {
   try {
-    console.log('Starting manual holiday adjustment for 5/2/2025...');
+    const dateString = targetDate.toLocaleDateString();
+    console.log(`Starting manual holiday adjustment for ${dateString}...`);
     
-    // Initialize services
-    const attendanceService = new AttendanceService();
-    const paymentService = new PaymentService();
-    const studentService = new StudentService();
-    const holidayService = new HolidayService();
-    const holidayFeeAdjustmentService = new HolidayFeeAdjustmentService(studentService);
+    // Initialize services with dependency injection support
+    const attendanceService = services.attendanceService || new AttendanceService();
+    const paymentService = services.paymentService || new PaymentService();
+    const studentService = services.studentService || new StudentService();
+    const holidayService = services.holidayService || new HolidayService();
+    const holidayFeeAdjustmentService = services.holidayFeeAdjustmentService || 
+      new HolidayFeeAdjustmentService(studentService);
     
     const attendanceDashboardService = new AttendanceDashboardService(
-      attendanceService,
-      paymentService,
-      studentService,
       holidayService,
-      holidayFeeAdjustmentService
+      attendanceService,
+      holidayFeeAdjustmentService,
+      studentService,
+      paymentService
     );
     
     // The target date
-    const holidayDate = new Date(2025, 4, 2); // May 2, 2025 (month is 0-indexed)
+    const holidayDate = targetDate;
     
     console.log('Analyzing holiday impact for', holidayDate.toLocaleDateString());
     
@@ -48,7 +61,7 @@ export async function fixHolidayAdjustmentForMay2() {
       // Process the holiday change with confirmation
       const result = await attendanceDashboardService.processHolidayChange(
         holidayDate,
-        'Manual Holiday - May 2, 2025',
+        `Manual Holiday - ${dateString}`,
         true // confirmed = true
       );
       
@@ -85,5 +98,11 @@ export async function fixHolidayAdjustmentForMay2() {
   }
 }
 
-// Function to be called from browser console
-window.fixHolidayAdjustment = fixHolidayAdjustmentForMay2;
+// Legacy function for backward compatibility
+export const fixHolidayAdjustmentForMay2 = () => fixHolidayAdjustment();
+
+// Function to be called from browser console (only in browser environment)
+if (typeof window !== 'undefined') {
+  window.fixHolidayAdjustment = fixHolidayAdjustment;
+  window.fixHolidayAdjustmentForMay2 = fixHolidayAdjustmentForMay2;
+}

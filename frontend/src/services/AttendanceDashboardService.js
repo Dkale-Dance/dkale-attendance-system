@@ -83,11 +83,20 @@ export default class AttendanceDashboardService {
         return false;
       }
       
-      const matchesAnyFormat = dateFormats.some(dateFormat => 
-        payment.notes.includes(`Payment for ${dateFormat}`) ||
-        payment.notes.includes(`payment for ${dateFormat}`) ||
-        payment.notes.includes(`Payment for ${dateFormat} -`) ||
-        payment.notes.includes(`payment for ${dateFormat} -`)
+      // Create flexible pattern matching for payment notes
+      const paymentPatterns = dateFormats.flatMap(dateFormat => [
+        `Payment for ${dateFormat}`,
+        `payment for ${dateFormat}`,
+        `Payment for ${dateFormat} -`,
+        `payment for ${dateFormat} -`,
+        `${dateFormat} payment`,
+        `${dateFormat} Payment`,
+        `fee for ${dateFormat}`,
+        `Fee for ${dateFormat}`
+      ]);
+      
+      const matchesAnyFormat = paymentPatterns.some(pattern => 
+        payment.notes.toLowerCase().includes(pattern.toLowerCase())
       );
       
       if (matchesAnyFormat) {

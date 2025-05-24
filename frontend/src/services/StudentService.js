@@ -158,14 +158,31 @@ export default class StudentService {
   }
 
   async addHolidayCredit(studentId, creditData) {
+    // Input validation
+    if (!studentId) {
+      throw new Error("Student ID is required");
+    }
+    if (!creditData || typeof creditData !== 'object') {
+      throw new Error("Credit data is required and must be an object");
+    }
+    if (!creditData.amount || creditData.amount <= 0) {
+      throw new Error("Credit amount must be positive");
+    }
+
     const student = await this.studentRepository.getStudentById(studentId);
     if (!student) {
       throw new Error("Student not found");
     }
 
     const existingCredits = student.holidayCredits || [];
+    
+    // Generate more robust ID using timestamp and random component
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substr(2, 9);
+    const creditId = `credit_${timestamp}_${randomSuffix}`;
+    
     const newCredit = {
-      id: Date.now().toString(),
+      id: creditId,
       ...creditData,
       createdAt: new Date().toISOString(),
       used: false,
@@ -207,26 +224,46 @@ export default class StudentService {
     }
   }
 
+  /**
+   * Mark holiday credits as used in chronological order (oldest first)
+   * @param {string} studentId - Student ID
+   * @param {number} amountToUse - Amount to mark as used
+   * @returns {Promise<Object>} Updated student object
+   */
   async markHolidayCreditsAsUsed(studentId, amountToUse) {
+    // Input validation
+    if (!studentId) {
+      throw new Error("Student ID is required");
+    }
+    if (!amountToUse || amountToUse <= 0) {
+      throw new Error("Amount to use must be positive");
+    }
+
     const student = await this.studentRepository.getStudentById(studentId);
     if (!student) {
-      throw new Error("Student not found");
+      throw new Error(`Student with ID ${studentId} not found`);
     }
 
     const holidayCredits = student.holidayCredits || [];
+    
+    // Sort credits by creation date to use oldest first
+    const sortedCredits = [...holidayCredits].sort((a, b) => 
+      new Date(a.createdAt) - new Date(b.createdAt)
+    );
+    
     let remainingToUse = amountToUse;
     
-    const updatedCredits = holidayCredits.map(credit => {
+    const updatedCredits = sortedCredits.map(credit => {
       if (remainingToUse > 0 && !credit.used) {
-        const availableAmount = credit.amount - credit.usedAmount;
+        const availableAmount = credit.amount - (credit.usedAmount || 0);
         const amountToDeduct = Math.min(remainingToUse, availableAmount);
         
         remainingToUse -= amountToDeduct;
         
         return {
           ...credit,
-          usedAmount: credit.usedAmount + amountToDeduct,
-          used: (credit.usedAmount + amountToDeduct) >= credit.amount,
+          usedAmount: (credit.usedAmount || 0) + amountToDeduct,
+          used: ((credit.usedAmount || 0) + amountToDeduct) >= credit.amount,
           lastUsedAt: new Date().toISOString()
         };
       }
@@ -234,7 +271,11 @@ export default class StudentService {
     });
 
     if (remainingToUse > 0) {
-      throw new Error(`Insufficient holiday credits. Attempted to use $${amountToUse}, but only had enough for $${amountToUse - remainingToUse}`);
+      const usedAmount = amountToUse - remainingToUse;
+      throw new Error(
+        `Insufficient holiday credits for student ${student.firstName} ${student.lastName}. ` +
+        `Attempted to use $${amountToUse.toFixed(2)}, but only $${usedAmount.toFixed(2)} was available.`
+      );
     }
 
     return this.studentRepository.updateStudent(studentId, { holidayCredits: updatedCredits });
