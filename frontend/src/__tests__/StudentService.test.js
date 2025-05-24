@@ -218,21 +218,31 @@ const mockStudentRepository = {
       expect(result.balance).toBe(expectedBalance);
     });
   
-    test("should not reduce balance below zero", async () => {
+    test("should allow negative balances (credits)", async () => {
       // Arrange
       const initialBalance = 30;
       const amountToReduce = 50;
+      const expectedBalance = -20; // 30 - 50 = -20 (credit)
       
       mockStudentRepository.getStudentById.mockResolvedValue({
         ...mockStudentData,
         balance: initialBalance
       });
+      
+      mockStudentRepository.updateStudent.mockResolvedValue({
+        ...mockStudentData,
+        balance: expectedBalance
+      });
   
-      // Act & Assert
-      await expect(studentService.reduceBalance(mockStudentData.id, amountToReduce))
-        .rejects
-        .toThrow("Cannot reduce balance below zero");
-      expect(mockStudentRepository.updateStudent).not.toHaveBeenCalled();
+      // Act
+      const result = await studentService.reduceBalance(mockStudentData.id, amountToReduce);
+  
+      // Assert
+      expect(mockStudentRepository.updateStudent).toHaveBeenCalledWith(
+        mockStudentData.id,
+        { balance: expectedBalance }
+      );
+      expect(result.balance).toBe(expectedBalance);
     });
   });
   
