@@ -11,6 +11,7 @@ import AttendanceReports from "./components/AttendanceReports";
 import PublicDashboard from "./components/PublicDashboard";
 import ErrorMessage from "./components/ErrorMessage";
 import Navbar from "./components/Navbar";
+import { attendanceDashboardService } from "./services/AttendanceDashboardService";
 import logo from "./assets/logo.png";
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
@@ -249,5 +250,6 @@ function App() {
     </Router>
   );
 }
+
 
 export default App;

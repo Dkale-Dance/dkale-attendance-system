@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { attendanceService } from '../services/AttendanceService';
+import { attendanceDashboardService } from '../services/AttendanceDashboardService';
 import StudentAttendanceRow from './StudentAttendanceRow';
 import BulkActionConfirmation from './BulkActionConfirmation';
 import ErrorMessage from './ErrorMessage';
@@ -208,12 +209,52 @@ const AttendanceDashboard = ({ userRole }) => {
     
     try {
       setError('');
+      
+      // Update attendance status first
       await attendanceService.bulkUpdateAttendanceWithFee(
         selectedDate, 
         selectedStudents, 
         bulkStatus, 
         {} // Empty attributes for bulk update since we're only setting status
       );
+      
+      // If changing to holiday status, process holiday payment adjustments
+      if (bulkStatus === 'holiday') {
+        try {
+          console.log(`Processing holiday payment adjustments for ${selectedDate.toLocaleDateString()}`);
+          
+          // Add a small delay and process only once per date
+          const dateKey = selectedDate.toDateString();
+          if (window.holidayProcessingInProgress && window.holidayProcessingInProgress[dateKey]) {
+            console.log('Holiday processing already in progress for this date, skipping...');
+            return;
+          }
+          
+          // Mark as processing
+          if (!window.holidayProcessingInProgress) window.holidayProcessingInProgress = {};
+          window.holidayProcessingInProgress[dateKey] = true;
+          
+          try {
+            const result = await attendanceDashboardService.retroactivelyProcessHoliday(
+              selectedDate, 
+              `Manual Holiday - ${selectedDate.toLocaleDateString()}`
+            );
+            
+            console.log('Holiday payment processing result:', result);
+            
+            if (result.totalCreditsIssued > 0) {
+              setError(`Holiday status applied. Processed $${result.totalCreditsIssued} in payment credits for ${result.paymentAdjustments.length} payments.`);
+            }
+          } finally {
+            // Clear processing flag after completion
+            delete window.holidayProcessingInProgress[dateKey];
+          }
+        } catch (holidayError) {
+          console.error('Error processing holiday payments:', holidayError);
+          // Don't fail the entire operation if holiday processing fails
+          setError(`Attendance updated to holiday, but payment processing had issues: ${holidayError.message}`);
+        }
+      }
       
       // Real-time listener will update the UI
       

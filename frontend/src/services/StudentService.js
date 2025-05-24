@@ -151,12 +151,93 @@ export default class StudentService {
     }
 
     const currentBalance = student.balance || 0;
-    if (currentBalance < amount) {
-      throw new Error("Cannot reduce balance below zero");
+    // Allow negative balances to represent student credits (e.g., holiday credits)
+    const newBalance = currentBalance - amount;
+    
+    return this.studentRepository.updateStudent(studentId, { balance: newBalance });
+  }
+
+  async addHolidayCredit(studentId, creditData) {
+    const student = await this.studentRepository.getStudentById(studentId);
+    if (!student) {
+      throw new Error("Student not found");
     }
 
-    const newBalance = currentBalance - amount;
-    return this.studentRepository.updateStudent(studentId, { balance: newBalance });
+    const existingCredits = student.holidayCredits || [];
+    const newCredit = {
+      id: Date.now().toString(),
+      ...creditData,
+      createdAt: new Date().toISOString(),
+      used: false,
+      usedAmount: 0
+    };
+
+    const updatedCredits = [...existingCredits, newCredit];
+    return this.studentRepository.updateStudent(studentId, { holidayCredits: updatedCredits });
+  }
+
+  async getHolidayCredits(studentId) {
+    const student = await this.studentRepository.getStudentById(studentId);
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
+    return student.holidayCredits || [];
+  }
+
+  async getAllHolidayCredits() {
+    try {
+      const students = await this.getAllStudents();
+      const studentsWithCredits = students
+        .filter(student => student.holidayCredits && student.holidayCredits.length > 0)
+        .map(student => ({
+          studentId: student.id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          holidayCredits: student.holidayCredits,
+          totalAvailableCredit: student.holidayCredits
+            .filter(credit => !credit.used)
+            .reduce((sum, credit) => sum + credit.amount, 0)
+        }));
+
+      return studentsWithCredits;
+    } catch (error) {
+      console.error("Error getting all holiday credits:", error);
+      throw new Error(`Failed to get holiday credits: ${error.message}`);
+    }
+  }
+
+  async markHolidayCreditsAsUsed(studentId, amountToUse) {
+    const student = await this.studentRepository.getStudentById(studentId);
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
+    const holidayCredits = student.holidayCredits || [];
+    let remainingToUse = amountToUse;
+    
+    const updatedCredits = holidayCredits.map(credit => {
+      if (remainingToUse > 0 && !credit.used) {
+        const availableAmount = credit.amount - credit.usedAmount;
+        const amountToDeduct = Math.min(remainingToUse, availableAmount);
+        
+        remainingToUse -= amountToDeduct;
+        
+        return {
+          ...credit,
+          usedAmount: credit.usedAmount + amountToDeduct,
+          used: (credit.usedAmount + amountToDeduct) >= credit.amount,
+          lastUsedAt: new Date().toISOString()
+        };
+      }
+      return credit;
+    });
+
+    if (remainingToUse > 0) {
+      throw new Error(`Insufficient holiday credits. Attempted to use $${amountToUse}, but only had enough for $${amountToUse - remainingToUse}`);
+    }
+
+    return this.studentRepository.updateStudent(studentId, { holidayCredits: updatedCredits });
   }
 }
 
