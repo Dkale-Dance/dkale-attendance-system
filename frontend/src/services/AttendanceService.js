@@ -1,13 +1,15 @@
 import { attendanceRepository } from "../repository/AttendanceRepository";
 import { studentRepository } from "../repository/StudentRepository";
 import { studentService } from "../services/StudentService";
+import { holidayService } from "../services/HolidayService";
 import { sortStudentsByFirstName } from "../utils/sorting";
 
 export default class AttendanceService {
-  constructor(attendanceRepository, studentRepository, studentServiceInstance = studentService) {
+  constructor(attendanceRepository, studentRepository, studentServiceInstance = studentService, holidayServiceInstance = holidayService) {
     this.attendanceRepository = attendanceRepository;
     this.studentRepository = studentRepository;
     this.studentService = studentServiceInstance;
+    this.holidayService = holidayServiceInstance;
   }
   
   /**
@@ -99,6 +101,24 @@ export default class AttendanceService {
   }
 
   /**
+   * Calculate the fee for attendance status and attributes, considering holidays
+   * On holidays, no fees should be charged regardless of status/attributes
+   * @param {string} status - Attendance status (present, absent, medicalAbsence, holiday)
+   * @param {Object} attributes - Fee attributes (late, noShoes, notInUniform)
+   * @param {Date} date - The date to check for holiday status
+   * @returns {number} Fee amount in dollars (0 if holiday)
+   */
+  calculateAttendanceFeeWithHolidays(status, attributes, date) {
+    // Check if the date is a holiday first
+    if (this.holidayService.isHoliday(date)) {
+      return 0;
+    }
+    
+    // Otherwise, calculate fee normally
+    return this.calculateAttendanceFee(status, attributes);
+  }
+
+  /**
    * Mark attendance for a single student
    * @param {Date} date - The date of attendance
    * @param {string} studentId - The student's ID
@@ -169,12 +189,21 @@ export default class AttendanceService {
    * @param {Object} oldAttributes - Previous attendance attributes
    * @param {string} newStatus - New attendance status
    * @param {Object} newAttributes - New attendance attributes
+   * @param {Date} date - Date to check for holiday status
    * @returns {number} - Fee difference (positive means fee increase, negative means fee decrease)
    */
-  calculateFeeDifference(oldStatus, oldAttributes, newStatus, newAttributes) {
-    const oldFee = this.calculateAttendanceFee(oldStatus, oldAttributes || {});
-    const newFee = this.calculateAttendanceFee(newStatus, newAttributes || {});
-    return newFee - oldFee;
+  calculateFeeDifference(oldStatus, oldAttributes, newStatus, newAttributes, date = null) {
+    if (date) {
+      // Use holiday-aware calculation if date is provided
+      const oldFee = this.calculateAttendanceFeeWithHolidays(oldStatus, oldAttributes || {}, date);
+      const newFee = this.calculateAttendanceFeeWithHolidays(newStatus, newAttributes || {}, date);
+      return newFee - oldFee;
+    } else {
+      // Fallback to original calculation for backward compatibility
+      const oldFee = this.calculateAttendanceFee(oldStatus, oldAttributes || {});
+      const newFee = this.calculateAttendanceFee(newStatus, newAttributes || {});
+      return newFee - oldFee;
+    }
   }
 
   /**
@@ -213,9 +242,9 @@ export default class AttendanceService {
       // Update attendance record first to ensure data consistency
       await this.attendanceRepository.updateAttendanceWithAttributes(date, studentId, status, normalizedAttributes);
       
-      // If there was no previous record, just apply the new fee (if any)
+      // If there was no previous record, just apply the new fee (if any) considering holidays
       if (!previousRecord) {
-        const newFee = this.calculateAttendanceFee(status, normalizedAttributes);
+        const newFee = this.calculateAttendanceFeeWithHolidays(status, normalizedAttributes, date);
         if (newFee > 0) {
           await this.studentService.addBalance(studentId, newFee);
         }
@@ -228,12 +257,13 @@ export default class AttendanceService {
       // Get previous status for fee calculation
       const previousStatus = previousRecord.status;
       
-      // Calculate fee difference between old and new status
+      // Calculate fee difference between old and new status (including holiday consideration)
       const feeDifference = this.calculateFeeDifference(
         previousStatus,
         previousAttributes,
         status,
-        normalizedAttributes
+        normalizedAttributes,
+        date
       );
       
       // Apply fee adjustment to student balance
@@ -303,9 +333,9 @@ export default class AttendanceService {
           // Get previous attendance record
           const previousRecord = await this.attendanceRepository.getAttendanceRecord(date, studentId);
           
-          // If no previous record, just apply new fee if applicable
+          // If no previous record, just apply new fee if applicable (considering holidays)
           if (!previousRecord) {
-            const newFee = this.calculateAttendanceFee(status, normalizedAttributes);
+            const newFee = this.calculateAttendanceFeeWithHolidays(status, normalizedAttributes, date);
             if (newFee > 0) {
               await this.studentService.addBalance(studentId, newFee);
               adjustmentResults.push({
@@ -322,12 +352,13 @@ export default class AttendanceService {
           const previousStatus = previousRecord.status;
           const previousAttributes = previousRecord.attributes || {};
           
-          // Calculate fee difference
+          // Calculate fee difference (including holiday consideration)
           const feeDifference = this.calculateFeeDifference(
             previousStatus,
             previousAttributes,
             status,
-            normalizedAttributes
+            normalizedAttributes,
+            date
           );
           
           // Apply fee adjustment
@@ -429,8 +460,8 @@ export default class AttendanceService {
       // Remove the attendance record
       const removedRecord = await this.attendanceRepository.removeAttendance(date, studentId);
       
-      // Calculate the fee that was previously applied
-      const previousFee = this.calculateAttendanceFee(previousStatus, previousAttributes);
+      // Calculate the fee that was previously applied (considering holidays)
+      const previousFee = this.calculateAttendanceFeeWithHolidays(previousStatus, previousAttributes, date);
       
       // If there was a fee, we need to reduce the student's balance
       if (previousFee > 0) {
@@ -453,4 +484,4 @@ export default class AttendanceService {
 }
 
 // Export a default instance
-export const attendanceService = new AttendanceService(attendanceRepository, studentRepository, studentService);
+export const attendanceService = new AttendanceService(attendanceRepository, studentRepository, studentService, holidayService);

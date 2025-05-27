@@ -1,14 +1,16 @@
 import { paymentRepository } from "../repository/PaymentRepository";
 import { studentRepository } from "../repository/StudentRepository";
+import { holidayService } from "./HolidayService";
 
 /**
  * Service for handling payment operations
  * Follows Single Responsibility and Dependency Inversion principles
  */
 export default class PaymentService {
-  constructor(paymentRepository, studentRepository) {
+  constructor(paymentRepository, studentRepository, holidayServiceInstance = holidayService) {
     this.paymentRepository = paymentRepository;
     this.studentRepository = studentRepository;
+    this.holidayService = holidayServiceInstance;
   }
   
   /**
@@ -84,9 +86,47 @@ export default class PaymentService {
       if (isNaN(paymentDate.getTime())) {
         throw new Error("Invalid payment date");
       }
+      
+      // Check if payment date is on a holiday and add warning note
+      if (this.holidayService.isHoliday(paymentDate)) {
+        const holidayName = this.holidayService.getHolidayName(paymentDate);
+        console.warn(`Payment being recorded on ${holidayName}. Note: No fees should be charged on holidays.`);
+        
+        // Add holiday flag to payment data for later processing
+        paymentData.isHolidayPayment = true;
+        paymentData.holidayName = holidayName;
+      }
     } else {
       throw new Error("Payment date is required");
     }
+  }
+
+  /**
+   * Check if a payment date falls on a holiday
+   * @param {Date|string} date - The payment date to check
+   * @returns {Object} Holiday information
+   * 
+   * @example
+   * // Check if a specific date is a holiday
+   * const holidayStatus = paymentService.checkHolidayStatus(new Date('2025-05-02'));
+   * if (holidayStatus.isHoliday) {
+   *   console.log(`Payment date is on ${holidayStatus.holidayName}`);
+   * }
+   * 
+   * @example
+   * // Use in payment validation
+   * const status = paymentService.checkHolidayStatus(paymentData.date);
+   * if (!status.shouldChargeFees) {
+   *   console.warn('No fees should be charged on holidays');
+   * }
+   */
+  checkHolidayStatus(date) {
+    const isHoliday = this.holidayService.isHoliday(date);
+    return {
+      isHoliday,
+      holidayName: isHoliday ? this.holidayService.getHolidayName(date) : null,
+      shouldChargeFees: !isHoliday
+    };
   }
 
   /**
@@ -230,4 +270,4 @@ export default class PaymentService {
 }
 
 // Export a default instance using the real repositories
-export const paymentService = new PaymentService(paymentRepository, studentRepository);
+export const paymentService = new PaymentService(paymentRepository, studentRepository, holidayService);
