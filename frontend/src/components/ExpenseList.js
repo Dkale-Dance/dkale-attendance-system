@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { expenseService } from '../services/ExpenseService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentList.module.css';
+import { EXPENSE_CATEGORIES, EXPENSE_LABELS } from '../constants/expenseConstants';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
@@ -17,7 +18,7 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
 
-  const loadExpenses = async () => {
+  const loadExpenses = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -35,58 +36,47 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
     loadExpenses();
-  }, [filter, refreshTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadExpenses, refreshTrigger]);
 
   const handleDeleteExpense = async (expenseId) => {
-    if (!window.confirm('Are you sure you want to delete this expense?')) {
+    if (!window.confirm(EXPENSE_LABELS.CONFIRM_DELETE)) {
       return;
     }
 
     try {
       await expenseService.deleteExpense(expenseId);
-      setExpenses(expenses.filter(expense => expense.id !== expenseId));
+      setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== expenseId));
       
       if (onExpenseDeleted) {
         onExpenseDeleted(expenseId);
       }
     } catch (err) {
-      setError(`Failed to delete expense: ${err.message}`);
+      setError(`${EXPENSE_LABELS.DELETE_FAILED} ${err.message}`);
     }
   };
 
-  const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'supplies', label: 'Supplies' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'equipment', label: 'Equipment' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'administrative', label: 'Administrative' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'other', label: 'Other' }
-  ];
 
   if (loading) {
-    return <div className={styles.loading}>Loading expenses...</div>;
+    return <div className={styles.loading}>{EXPENSE_LABELS.LOADING}</div>;
   }
 
   return (
     <div className={styles.listContainer}>
       <div className={styles.header}>
-        <h3>Expenses</h3>
+        <h3>{EXPENSE_LABELS.LIST_TITLE}</h3>
         <div className={styles.filterContainer}>
-          <label htmlFor="categoryFilter">Filter by category:</label>
+          <label htmlFor="categoryFilter">{EXPENSE_LABELS.FILTER_LABEL}</label>
           <select
             id="categoryFilter"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             className={styles.filterSelect}
           >
-            {categories.map(cat => (
+            {EXPENSE_CATEGORIES.map(cat => (
               <option key={cat.value} value={cat.value}>
                 {cat.label}
               </option>
@@ -99,7 +89,7 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
 
       {expenses.length === 0 ? (
         <div className={styles.noData}>
-          {filter === 'all' ? 'No expenses found.' : `No expenses found in ${filter} category.`}
+          {filter === 'all' ? EXPENSE_LABELS.NO_EXPENSES : EXPENSE_LABELS.NO_CATEGORY_EXPENSES.replace('{category}', filter)}
         </div>
       ) : (
         <div className={styles.tableContainer}>
@@ -117,15 +107,15 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
             <tbody>
               {expenses.map(expense => (
                 <tr key={expense.id}>
-                  <td>{new Date(expense.date).toLocaleDateString()}</td>
+                  <td>{expense?.date ? new Date(expense.date).toLocaleDateString() : '-'}</td>
                   <td>
-                    <span className={`${styles.category} ${styles[expense.category]}`}>
-                      {expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}
+                    <span className={`${styles.category} ${styles[expense?.category || 'other']}`}>
+                      {expense?.category ? expense.category.charAt(0).toUpperCase() + expense.category.slice(1) : 'Other'}
                     </span>
                   </td>
-                  <td>{expense.description}</td>
-                  <td className={styles.amount}>{formatCurrency(expense.amount)}</td>
-                  <td>{expense.notes || '-'}</td>
+                  <td>{expense?.description || '-'}</td>
+                  <td className={styles.amount}>{formatCurrency(expense?.amount || 0)}</td>
+                  <td>{expense?.notes || '-'}</td>
                   <td>
                     <button
                       onClick={() => handleDeleteExpense(expense.id)}
@@ -144,7 +134,7 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
 
       <div className={styles.summary}>
         <strong>
-          Total: {formatCurrency(expenses.reduce((sum, expense) => sum + expense.amount, 0))}
+          Total: {formatCurrency(expenses.reduce((sum, expense) => sum + (expense?.amount || 0), 0))}
         </strong>
       </div>
     </div>

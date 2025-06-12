@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { expenseService } from '../services/ExpenseService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentForm.module.css';
+import { EXPENSE_CATEGORIES, EXPENSE_LABELS } from '../constants/expenseConstants';
 
 const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
   const [formData, setFormData] = useState({
@@ -14,16 +15,7 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const categories = [
-    { value: 'supplies', label: 'Supplies' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'equipment', label: 'Equipment' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'administrative', label: 'Administrative' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'other', label: 'Other' }
-  ];
+  const categories = EXPENSE_CATEGORIES.filter(cat => cat.value !== 'all');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -68,7 +60,7 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
 
   return (
     <div className={styles.formContainer}>
-      <h3>Add New Expense</h3>
+      <h3>{EXPENSE_LABELS.FORM_TITLE}</h3>
       
       {error && <ErrorMessage message={error} />}
       

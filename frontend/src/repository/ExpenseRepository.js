@@ -1,13 +1,20 @@
 import { getFirestore, doc, setDoc, getDoc, deleteDoc, Timestamp, collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import app from "../lib/firebase/config/config";
+import { DateConverterUtils } from "../utils/DateConverterUtils";
 
 export class ExpenseRepository {
   constructor() {
     try {
       this.db = getFirestore(app);
+      if (!this.db && process.env.NODE_ENV !== 'test') {
+        throw new Error("Failed to initialize Firestore database");
+      }
     } catch (error) {
       console.error("Error initializing Firestore:", error);
+      if (process.env.NODE_ENV !== 'test') {
+        throw new Error(`Firestore initialization failed: ${error.message}`);
+      }
       this.db = {};
     }
     this.collectionName = "expenses";
@@ -25,9 +32,7 @@ export class ExpenseRepository {
       
       const expense = {
         ...expenseData,
-        date: expenseData.date instanceof Date 
-          ? Timestamp.fromDate(expenseData.date) 
-          : Timestamp.fromDate(new Date(expenseData.date)),
+        date: DateConverterUtils.convertToTimestamp(expenseData.date),
         createdAt: Timestamp.fromDate(new Date())
       };
       
@@ -84,17 +89,10 @@ export class ExpenseRepository {
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
         
-        let date = data.date;
-        if (date && typeof date.toDate === 'function') {
-          date = date.toDate();
-        } else if (date) {
-          date = new Date(date);
-        }
-        
         return {
           ...data,
           id: doc.id,
-          date: date
+          date: DateConverterUtils.convertToDate(data.date)
         };
       });
     } catch (error) {
@@ -114,8 +112,8 @@ export class ExpenseRepository {
       const expensesRef = collection(this.db, this.collectionName);
       const q = query(
         expensesRef,
-        where("date", ">=", startDate),
-        where("date", "<=", endDate),
+        where("date", ">=", DateConverterUtils.convertToTimestamp(startDate)),
+        where("date", "<=", DateConverterUtils.convertToTimestamp(endDate)),
         orderBy("date", "desc")
       );
       
@@ -124,17 +122,10 @@ export class ExpenseRepository {
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
         
-        let date = data.date;
-        if (date && typeof date.toDate === 'function') {
-          date = date.toDate();
-        } else if (date) {
-          date = new Date(date);
-        }
-        
         return {
           ...data,
           id: doc.id,
-          date: date
+          date: DateConverterUtils.convertToDate(data.date)
         };
       });
     } catch (error) {
@@ -162,17 +153,10 @@ export class ExpenseRepository {
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
         
-        let date = data.date;
-        if (date && typeof date.toDate === 'function') {
-          date = date.toDate();
-        } else if (date) {
-          date = new Date(date);
-        }
-        
         return {
           ...data,
           id: doc.id,
-          date: date
+          date: DateConverterUtils.convertToDate(data.date)
         };
       });
     } catch (error) {

@@ -1,5 +1,13 @@
 import { ExpenseRepository } from "../repository/ExpenseRepository";
 
+// Mock DateConverterUtils
+jest.mock("../utils/DateConverterUtils", () => ({
+  DateConverterUtils: {
+    convertToTimestamp: jest.fn((date) => date ? { toDate: () => date } : null),
+    convertToDate: jest.fn((date) => date && typeof date.toDate === 'function' ? date.toDate() : new Date(date))
+  }
+}));
+
 // Mock firebase/firestore
 jest.mock("firebase/firestore", () => ({
   getFirestore: jest.fn(() => ({})),
@@ -32,6 +40,8 @@ describe("ExpenseRepository", () => {
   beforeEach(() => {
     // Import the mocked functions
     const firestore = require("firebase/firestore");
+    const { DateConverterUtils } = require("../utils/DateConverterUtils");
+    
     mockDoc = firestore.doc;
     mockSetDoc = firestore.setDoc;
     mockGetDoc = firestore.getDoc;
@@ -41,6 +51,11 @@ describe("ExpenseRepository", () => {
     mockWhere = firestore.where;
     mockOrderBy = firestore.orderBy;
     mockGetDocs = firestore.getDocs;
+
+    // Reset mocks
+    DateConverterUtils.convertToTimestamp.mockImplementation((date) => 
+      date ? { toDate: () => date } : null
+    );
 
     expenseRepository = new ExpenseRepository();
     expenseRepository.db = {};
@@ -68,7 +83,7 @@ describe("ExpenseRepository", () => {
 
       const result = await expenseRepository.createExpense(expenseData);
 
-      expect(mockDoc).toHaveBeenCalledWith(mockDb, "expenses", expect.any(String));
+      expect(mockDoc).toHaveBeenCalledWith({}, "expenses", expect.any(String));
       expect(mockSetDoc).toHaveBeenCalledWith(
         mockExpenseRef,
         expect.objectContaining({
@@ -122,7 +137,7 @@ describe("ExpenseRepository", () => {
 
       const result = await expenseRepository.getExpenseById(expenseId);
 
-      expect(mockDoc).toHaveBeenCalledWith(mockDb, "expenses", expenseId);
+      expect(mockDoc).toHaveBeenCalledWith({}, "expenses", expenseId);
       expect(mockGetDoc).toHaveBeenCalledWith(mockExpenseRef);
       expect(result).toEqual({
         ...mockExpenseData,
@@ -188,7 +203,7 @@ describe("ExpenseRepository", () => {
 
       const result = await expenseRepository.getAllExpenses();
 
-      expect(mockCollection).toHaveBeenCalledWith(mockDb, "expenses");
+      expect(mockCollection).toHaveBeenCalledWith({}, "expenses");
       expect(mockOrderBy).toHaveBeenCalledWith("date", "desc");
       expect(mockQuery).toHaveBeenCalledWith("expensesRef", "orderByRef");
       expect(mockGetDocs).toHaveBeenCalledWith("queryRef");
@@ -232,8 +247,8 @@ describe("ExpenseRepository", () => {
 
       const result = await expenseRepository.getExpensesByDateRange(startDate, endDate);
 
-      expect(mockWhere).toHaveBeenCalledWith("date", ">=", startDate);
-      expect(mockWhere).toHaveBeenCalledWith("date", "<=", endDate);
+      expect(mockWhere).toHaveBeenCalledWith("date", ">=", expect.any(Object));
+      expect(mockWhere).toHaveBeenCalledWith("date", "<=", expect.any(Object));
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("exp1");
     });
@@ -279,7 +294,7 @@ describe("ExpenseRepository", () => {
 
       await expenseRepository.deleteExpense(expenseId);
 
-      expect(mockDoc).toHaveBeenCalledWith(mockDb, "expenses", expenseId);
+      expect(mockDoc).toHaveBeenCalledWith({}, "expenses", expenseId);
       expect(mockDeleteDoc).toHaveBeenCalledWith(mockExpenseRef);
     });
 
