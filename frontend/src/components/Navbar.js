@@ -78,6 +78,14 @@ const NavigationLinks = ({ userRole, isExpanded }) => {
     
     links.push(
       <NavLink 
+        key="expenses" 
+        label="Expenses" 
+        to="/expenses"
+      />
+    );
+    
+    links.push(
+      <NavLink 
         key="financial-reports" 
         label="Financial Reports" 
         to="/financial-reports"

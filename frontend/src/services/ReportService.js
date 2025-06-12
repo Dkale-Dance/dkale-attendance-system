@@ -2,6 +2,7 @@ import { reportRepository } from "../repository/ReportRepository";
 import { studentRepository } from "../repository/StudentRepository";
 import { attendanceRepository } from "../repository/AttendanceRepository";
 import { attendanceService } from "../services/AttendanceService";
+import { expenseService } from "../services/ExpenseService";
 import { sortByName } from "../utils/sorting";
 import { formatDateForDocId, parseDateString } from "../utils/DateUtils";
 
@@ -15,11 +16,12 @@ export const formatCurrency = (amount) => {
 };
 
 export default class ReportService {
-  constructor(reportRepository, studentRepository, attendanceRepository, attendanceService) {
+  constructor(reportRepository, studentRepository, attendanceRepository, attendanceService, expenseServiceInstance = expenseService) {
     this.reportRepository = reportRepository;
     this.studentRepository = studentRepository;
     this.attendanceRepository = attendanceRepository;
     this.attendanceService = attendanceService;
+    this.expenseService = expenseServiceInstance;
   }
 
   /**
@@ -253,6 +255,15 @@ export default class ReportService {
           
           return total + amount;
         }, 0) : 0;
+
+      // Get expenses for the month
+      const startOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+      const endOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+      const monthlyExpenses = await this.expenseService.getExpensesByDateRange(startOfMonth, endOfMonth);
+      const totalExpenses = monthlyExpenses.reduce((total, expense) => total + expense.amount, 0);
+      
+      // Calculate expense breakdown by category
+      const expenseBreakdown = await this.expenseService.getExpenseSummaryByDateRange(startOfMonth, endOfMonth);
       
       // Combine fee and payment data for each student
       for (const studentId of new Set([...Object.keys(studentFees), ...Object.keys(studentPayments)])) {
@@ -339,13 +350,18 @@ export default class ReportService {
           totalPaymentsReceived,
           feesCollected,
           pendingFees,
-          feesInPaymentProcess
+          feesInPaymentProcess,
+          totalExpenses,
+          availableBudget: totalPaymentsReceived - totalExpenses,
+          netIncome: feesCollected - totalExpenses
         },
         feeBreakdown,
+        expenseBreakdown,
         studentDetails: filteredStudentDetails,
         rawData: {
           attendance: monthlyAttendance,
-          payments: monthlyPayments
+          payments: monthlyPayments,
+          expenses: monthlyExpenses
         }
       };
     } catch (error) {
@@ -531,13 +547,19 @@ export default class ReportService {
       const totalPaymentsInRange = payments && Array.isArray(payments) ? 
         payments.reduce((total, payment) => total + (payment.amount || 0), 0) : 0;
       
+      // Get total expenses for the date range
+      const totalExpensesInRange = await this.expenseService.getExpenseSummaryByDateRange(startDate, endDate);
+
       // Calculate totals across all months
       const totals = {
         totalFeesCharged: monthlyReports.reduce((sum, report) => sum + report.summary.totalFeesCharged, 0),
         totalPaymentsReceived: monthlyReports.reduce((sum, report) => sum + report.summary.totalPaymentsReceived, 0),
         feesCollected: monthlyReports.reduce((sum, report) => sum + report.summary.feesCollected, 0),
         pendingFees: monthlyReports.reduce((sum, report) => sum + report.summary.pendingFees, 0),
-        feesInPaymentProcess: monthlyReports.reduce((sum, report) => sum + report.summary.feesInPaymentProcess, 0)
+        feesInPaymentProcess: monthlyReports.reduce((sum, report) => sum + report.summary.feesInPaymentProcess, 0),
+        totalExpenses: totalExpensesInRange.totalAmount,
+        availableBudget: totalPaymentsInRange - totalExpensesInRange.totalAmount,
+        netIncome: monthlyReports.reduce((sum, report) => sum + report.summary.feesCollected, 0) - totalExpensesInRange.totalAmount
       };
       
       // Calculate fee breakdown totals
@@ -584,6 +606,7 @@ export default class ReportService {
         monthlyReports,
         totals,
         feeBreakdown,
+        expenseBreakdown: totalExpensesInRange.categoryBreakdown,
         yearToDate,
         summary: totals // Add summary field to match test expectations
       };
@@ -1193,5 +1216,6 @@ export const reportService = new ReportService(
   reportRepository,
   studentRepository,
   attendanceRepository,
-  attendanceService
+  attendanceService,
+  expenseService
 );
