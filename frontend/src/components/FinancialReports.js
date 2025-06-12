@@ -253,6 +253,42 @@ const FinancialReports = ({ userRole }) => {
                   <p className={styles.amount}>{formatCurrency(monthlyReport.summary.feesInPaymentProcess)}</p>
                 </div>
               </div>
+
+              {/* Budget and expenses overview */}
+              <div className={styles.budgetOverview}>
+                <h3>Budget Overview</h3>
+                <div className={styles.summaryCards}>
+                  <div className={styles.summaryCard}>
+                    <h4>Total Expenses</h4>
+                    <p className={styles.amount}>{formatCurrency(monthlyReport.summary.totalExpenses || 0)}</p>
+                  </div>
+                  <div className={`${styles.summaryCard} ${styles.availableBudget}`}>
+                    <h4>Available Budget</h4>
+                    <p className={styles.amount}>{formatCurrency(monthlyReport.summary.availableBudget || 0)}</p>
+                    <small>Payments - Expenses</small>
+                  </div>
+                  <div className={`${styles.summaryCard} ${monthlyReport.summary.netIncome >= 0 ? styles.positiveIncome : styles.negativeIncome}`}>
+                    <h4>Net Income</h4>
+                    <p className={styles.amount}>{formatCurrency(monthlyReport.summary.netIncome || 0)}</p>
+                    <small>Fees Collected - Expenses</small>
+                  </div>
+                </div>
+              </div>
+
+              {/* Expense breakdown */}
+              {monthlyReport.expenseBreakdown && monthlyReport.expenseBreakdown.categoryBreakdown && (
+                <div className={styles.expenseBreakdown} data-testid="expense-breakdown">
+                  <h3>Expense Breakdown</h3>
+                  <div className={styles.expenseCards}>
+                    {Object.entries(monthlyReport.expenseBreakdown.categoryBreakdown).map(([category, amount]) => (
+                      <div key={category} className={styles.expenseCard}>
+                        <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
+                        <p>{formatCurrency(amount)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Fee type breakdown */}
               <div className={styles.feeTypeBreakdown} data-testid="fee-type-breakdown">
@@ -367,6 +403,25 @@ const FinancialReports = ({ userRole }) => {
                     <p className={styles.amount}>{formatCurrency(cumulativeReport.totals.pendingFees)}</p>
                   </div>
                 </div>
+                
+                {/* Budget overview for cumulative */}
+                <h4>Budget Overview</h4>
+                <div className={styles.summaryCards}>
+                  <div className={styles.summaryCard}>
+                    <h4>Total Expenses</h4>
+                    <p className={styles.amount}>{formatCurrency(cumulativeReport.totals.totalExpenses || 0)}</p>
+                  </div>
+                  <div className={`${styles.summaryCard} ${styles.availableBudget}`}>
+                    <h4>Available Budget</h4>
+                    <p className={styles.amount}>{formatCurrency(cumulativeReport.totals.availableBudget || 0)}</p>
+                    <small>Total Payments - Total Expenses</small>
+                  </div>
+                  <div className={`${styles.summaryCard} ${cumulativeReport.totals.netIncome >= 0 ? styles.positiveIncome : styles.negativeIncome}`}>
+                    <h4>Net Income</h4>
+                    <p className={styles.amount}>{formatCurrency(cumulativeReport.totals.netIncome || 0)}</p>
+                    <small>Fees Collected - Total Expenses</small>
+                  </div>
+                </div>
               </div>
               
               {/* Fee type breakdown */}
@@ -391,6 +446,21 @@ const FinancialReports = ({ userRole }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Cumulative expense breakdown */}
+              {cumulativeReport.expenseBreakdown && Object.keys(cumulativeReport.expenseBreakdown).length > 0 && (
+                <div className={styles.expenseBreakdown} data-testid="cumulative-expense-breakdown">
+                  <h3>Expense Breakdown</h3>
+                  <div className={styles.expenseCards}>
+                    {Object.entries(cumulativeReport.expenseBreakdown).map(([category, amount]) => (
+                      <div key={category} className={styles.expenseCard}>
+                        <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
+                        <p>{formatCurrency(amount)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Monthly breakdown */}
               <div className={styles.monthlyBreakdown}>
