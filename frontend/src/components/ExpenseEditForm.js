@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { expenseService } from '../services/ExpenseService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentForm.module.css';
@@ -6,17 +6,31 @@ import { EXPENSE_CATEGORIES, EXPENSE_LABELS } from '../constants/expenseConstant
 import { BUDGET_TYPE_OPTIONS, BUDGET_LABELS } from '../constants/budgetConstants';
 import { BUDGET_TYPES } from '../models/BudgetModels';
 
-const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
+const ExpenseEditForm = ({ expense, onExpenseUpdated, onCancel, currentUser }) => {
   const [formData, setFormData] = useState({
-    category: 'supplies',
+    category: '',
     description: '',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: '',
     notes: '',
     budgetType: BUDGET_TYPES.FEE_REVENUE // Default to fee revenue
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Initialize form data when expense prop changes
+  useEffect(() => {
+    if (expense) {
+      setFormData({
+        category: expense.category || 'supplies',
+        description: expense.description || '',
+        amount: expense.amount?.toString() || '',
+        date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : '',
+        notes: expense.notes || '',
+        budgetType: expense.budgetType || BUDGET_TYPES.FEE_REVENUE
+      });
+    }
+  }, [expense]);
 
   const categories = EXPENSE_CATEGORIES.filter(cat => cat.value !== 'all');
   const budgetTypeOptions = BUDGET_TYPE_OPTIONS.filter(option => 
@@ -37,28 +51,21 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
     setError('');
 
     try {
-      const expenseData = {
-        ...formData,
+      const updateData = {
+        category: formData.category,
+        description: formData.description,
         amount: parseFloat(formData.amount),
         date: new Date(formData.date),
+        notes: formData.notes,
         budgetType: formData.budgetType,
-        adminId: currentUser?.uid || 'unknown-admin'
+        adminId: currentUser?.uid || expense.adminId || 'unknown-admin'
       };
 
-      const newExpense = await expenseService.createExpense(expenseData);
+      const updatedExpense = await expenseService.updateExpense(expense.id, updateData);
       
-      if (onExpenseCreated) {
-        onExpenseCreated(newExpense);
+      if (onExpenseUpdated) {
+        onExpenseUpdated(updatedExpense);
       }
-
-      setFormData({
-        category: 'supplies',
-        description: '',
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        notes: '',
-        budgetType: BUDGET_TYPES.FEE_REVENUE
-      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -66,9 +73,13 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
     }
   };
 
+  if (!expense) {
+    return <div>No expense selected for editing.</div>;
+  }
+
   return (
     <div className={styles.formContainer}>
-      <h3>{EXPENSE_LABELS.FORM_TITLE}</h3>
+      <h3>Edit Expense</h3>
       
       {error && <ErrorMessage message={error} />}
       
@@ -176,21 +187,19 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
             disabled={loading}
             className={styles.submitButton}
           >
-            {loading ? 'Adding...' : 'Add Expense'}
+            {loading ? 'Updating...' : BUDGET_LABELS.UPDATE}
           </button>
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className={styles.cancelButton}
-            >
-              Cancel
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onCancel}
+            className={styles.cancelButton}
+          >
+            {BUDGET_LABELS.CANCEL}
+          </button>
         </div>
       </form>
     </div>
   );
 };
 
-export default ExpenseForm;
+export default ExpenseEditForm;

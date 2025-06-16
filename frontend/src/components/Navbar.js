@@ -86,6 +86,14 @@ const NavigationLinks = ({ userRole, isExpanded }) => {
     
     links.push(
       <NavLink 
+        key="budget-management" 
+        label="Budget Management" 
+        to="/budget-management"
+      />
+    );
+    
+    links.push(
+      <NavLink 
         key="financial-reports" 
         label="Financial Reports" 
         to="/financial-reports"

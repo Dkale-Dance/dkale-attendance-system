@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { reportService } from '../services/ReportService';
+import { budgetService } from '../services/BudgetService';
 import ErrorMessage from './ErrorMessage';
 import styles from './Reports.module.css';
 
@@ -19,6 +20,7 @@ const FinancialReports = ({ userRole }) => {
   const [monthlyReport, setMonthlyReport] = useState(null);
   const [cumulativeReport, setCumulativeReport] = useState(null);
   const [visualizationData, setVisualizationData] = useState(null);
+  const [budgetSummary, setBudgetSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -46,12 +48,22 @@ const FinancialReports = ({ userRole }) => {
           // Fetch monthly report for current date
           const monthlyReportData = await reportService.generateDetailedMonthlyFinancialReport(currentDate);
           setMonthlyReport(monthlyReportData);
+          
+          // Fetch budget data for the same month
+          const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+          const budgetSummaryData = await budgetService.calculateBudgetSummary(monthStart, monthEnd);
+          setBudgetSummary(budgetSummaryData);
         }
         
         if (activeTab === 'cumulative') {
           // Fetch cumulative report with date range
           const cumulativeReportData = await reportService.generateCumulativeFinancialReport(dateRange);
           setCumulativeReport(cumulativeReportData);
+          
+          // Fetch budget data for the same date range
+          const budgetSummaryData = await budgetService.calculateBudgetSummary(dateRange.startDate, dateRange.endDate);
+          setBudgetSummary(budgetSummaryData);
         }
         
         if (activeTab === 'visualization') {
@@ -273,6 +285,30 @@ const FinancialReports = ({ userRole }) => {
                     <small>Fees Collected - Expenses</small>
                   </div>
                 </div>
+                
+                {/* New Budget Breakdown */}
+                {budgetSummary && (
+                  <div className={styles.budgetBreakdown}>
+                    <h4>Budget Revenue Breakdown</h4>
+                    <div className={styles.summaryCards}>
+                      <div className={styles.summaryCard}>
+                        <h5>Fee Revenue</h5>
+                        <p className={styles.amount}>{formatCurrency(budgetSummary.feeRevenue)}</p>
+                        <small>Late fees, absent fees, etc.</small>
+                      </div>
+                      <div className={styles.summaryCard}>
+                        <h5>Contribution Revenue</h5>
+                        <p className={styles.amount}>{formatCurrency(budgetSummary.contributionRevenue)}</p>
+                        <small>Member contributions ($70 payments)</small>
+                      </div>
+                      <div className={`${styles.summaryCard} ${budgetSummary.isPositive() ? styles.positiveIncome : styles.negativeIncome}`}>
+                        <h5>Budget Net</h5>
+                        <p className={styles.amount}>{formatCurrency(budgetSummary.getNetBudget())}</p>
+                        <small>Total Revenue - Total Expenses</small>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Expense breakdown */}
@@ -422,6 +458,66 @@ const FinancialReports = ({ userRole }) => {
                     <small>Fees Collected - Total Expenses</small>
                   </div>
                 </div>
+                
+                {/* Cumulative Budget Breakdown */}
+                {budgetSummary && (
+                  <div className={styles.budgetBreakdown}>
+                    <h4>Budget Revenue Breakdown</h4>
+                    <div className={styles.summaryCards}>
+                      <div className={styles.summaryCard}>
+                        <h5>Fee Revenue</h5>
+                        <p className={styles.amount}>{formatCurrency(budgetSummary.feeRevenue)}</p>
+                        <small>Late fees, absent fees, etc.</small>
+                      </div>
+                      <div className={styles.summaryCard}>
+                        <h5>Contribution Revenue</h5>
+                        <p className={styles.amount}>{formatCurrency(budgetSummary.contributionRevenue)}</p>
+                        <small>Member contributions ($70 payments)</small>
+                      </div>
+                      <div className={styles.summaryCard}>
+                        <h5>Total Budget Revenue</h5>
+                        <p className={styles.amount}>{formatCurrency(budgetSummary.getTotalRevenue())}</p>
+                        <small>Fee + Contribution Revenue</small>
+                      </div>
+                      <div className={`${styles.summaryCard} ${budgetSummary.isPositive() ? styles.positiveIncome : styles.negativeIncome}`}>
+                        <h5>Budget Net</h5>
+                        <p className={styles.amount}>{formatCurrency(budgetSummary.getNetBudget())}</p>
+                        <small>Total Revenue - Total Expenses</small>
+                      </div>
+                    </div>
+                    
+                    {/* Revenue percentage breakdown */}
+                    <div className={styles.revenuePercentages}>
+                      <h5>Revenue Source Breakdown</h5>
+                      <div className={styles.percentageBar}>
+                        {budgetSummary.getTotalRevenue() > 0 && (
+                          <>
+                            <div 
+                              className={styles.feeRevenueSegment}
+                              style={{ 
+                                width: `${(budgetSummary.feeRevenue / budgetSummary.getTotalRevenue()) * 100}%`,
+                                backgroundColor: '#10B981'
+                              }}
+                              title={`Fee Revenue: ${((budgetSummary.feeRevenue / budgetSummary.getTotalRevenue()) * 100).toFixed(1)}%`}
+                            />
+                            <div 
+                              className={styles.contributionRevenueSegment}
+                              style={{ 
+                                width: `${(budgetSummary.contributionRevenue / budgetSummary.getTotalRevenue()) * 100}%`,
+                                backgroundColor: '#3B82F6'
+                              }}
+                              title={`Contribution Revenue: ${((budgetSummary.contributionRevenue / budgetSummary.getTotalRevenue()) * 100).toFixed(1)}%`}
+                            />
+                          </>
+                        )}
+                      </div>
+                      <div className={styles.percentageLabels}>
+                        <span>Fee Revenue: {budgetSummary.getTotalRevenue() > 0 ? ((budgetSummary.feeRevenue / budgetSummary.getTotalRevenue()) * 100).toFixed(1) : 0}%</span>
+                        <span>Contribution Revenue: {budgetSummary.getTotalRevenue() > 0 ? ((budgetSummary.contributionRevenue / budgetSummary.getTotalRevenue()) * 100).toFixed(1) : 0}%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Fee type breakdown */}

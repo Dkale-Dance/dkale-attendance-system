@@ -35,5 +35,10 @@ service cloud.firestore {
     match /expenses/{document=**} {
       allow read, write: if isAdmin();
     }
+    
+    // Allow admin users to read and write to the budget_entries collection
+    match /budget_entries/{document=**} {
+      allow read, write: if isAdmin();
+    }
   }
 }
