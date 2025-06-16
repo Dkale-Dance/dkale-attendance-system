@@ -27,6 +27,11 @@ const mockAttendanceService = {
   calculateAttendanceFee: jest.fn()
 };
 
+const mockExpenseService = {
+  getExpensesByDateRange: jest.fn(),
+  getExpenseSummaryByDateRange: jest.fn()
+};
+
 // Mock the repositories
 jest.mock("../repository/ReportRepository", () => ({
   reportRepository: mockReportRepository
@@ -146,12 +151,20 @@ describe("ReportService - Comprehensive Financial Reports", () => {
     // Clear mock calls before each test
     jest.clearAllMocks();
     
+    // Set up default mock return values
+    mockExpenseService.getExpensesByDateRange.mockResolvedValue([]);
+    mockExpenseService.getExpenseSummaryByDateRange.mockResolvedValue({
+      totalExpenses: 0,
+      expensesByCategory: {}
+    });
+    
     // Create service instance with the mock repositories
     reportService = new ReportService(
       mockReportRepository,
       mockStudentRepository,
       mockAttendanceRepository,
-      mockAttendanceService
+      mockAttendanceService,
+      mockExpenseService
     );
     
     // Set up comprehensive mocks with complete data structures for all tests
