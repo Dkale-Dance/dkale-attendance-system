@@ -3,14 +3,7 @@ import { expenseService } from '../services/ExpenseService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentList.module.css';
 import { EXPENSE_CATEGORIES, EXPENSE_LABELS } from '../constants/expenseConstants';
-
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
-  }).format(amount);
-};
+import { formatCurrency } from '../utils/formatters';
 
 const ExpenseList = ({ refreshTrigger, onExpenseDeleted, onExpenseEdit }) => {
   const [expenses, setExpenses] = useState([]);

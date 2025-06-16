@@ -117,7 +117,7 @@ describe('BudgetRepository', () => {
       mockDoc.mockReturnValue({ id: 'fee123' });
       mockSetDoc.mockRejectedValue(new Error('Firestore error'));
 
-      await expect(budgetRepository.createFeeRevenue(feeData)).rejects.toThrow('Failed to create fee revenue: Firestore error');
+      await expect(budgetRepository.createFeeRevenue(feeData)).rejects.toThrow('Failed to create fee revenue: Operation failed after 3 attempts: Firestore error');
     });
   });
 

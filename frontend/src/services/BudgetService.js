@@ -297,25 +297,65 @@ export class BudgetService {
     try {
       const allContributions = await this.budgetRepository.getBudgetEntriesByType(BUDGET_TYPES.CONTRIBUTION_REVENUE);
       
-      // Group contributions by contributor
+      // Group contributions by contributor and calculate status in single pass
       const contributorMap = {};
       allContributions.forEach(contribution => {
-        if (!contributorMap[contribution.contributorId]) {
-          contributorMap[contribution.contributorId] = {
-            contributorId: contribution.contributorId,
+        const contributorId = contribution.contributorId;
+        if (!contributorMap[contributorId]) {
+          contributorMap[contributorId] = {
+            contributorId: contributorId,
             contributorName: contribution.contributorName,
-            contributions: []
+            totalAmount: 0,
+            contributions: [],
+            latestPaymentDate: null
           };
         }
-        contributorMap[contribution.contributorId].contributions.push(contribution);
+        contributorMap[contributorId].contributions.push(contribution);
+        contributorMap[contributorId].totalAmount += contribution.amount;
+        
+        // Track latest payment date
+        const paymentDate = contribution.date;
+        if (!contributorMap[contributorId].latestPaymentDate || paymentDate > contributorMap[contributorId].latestPaymentDate) {
+          contributorMap[contributorId].latestPaymentDate = paymentDate;
+        }
       });
 
-      // Calculate status for each contributor
-      const statuses = await Promise.all(
-        Object.keys(contributorMap).map(async contributorId => {
-          return await this.getContributorPaymentStatus(contributorId, expectedAmount);
-        })
-      );
+      // Calculate status for each contributor without additional database calls
+      const statuses = Object.values(contributorMap).map(contributor => {
+        const totalAmount = contributor.totalAmount;
+        const difference = totalAmount - expectedAmount;
+        
+        let status;
+        let isOverpaid = false;
+        let isComplete = false;
+        let isPartial = false;
+        
+        if (totalAmount === 0) {
+          status = 'No payments made';
+        } else if (totalAmount >= expectedAmount) {
+          status = totalAmount === expectedAmount ? 'Payment complete' : 'Overpaid';
+          isComplete = totalAmount === expectedAmount;
+          isOverpaid = totalAmount > expectedAmount;
+        } else {
+          status = 'Partial payment';
+          isPartial = true;
+        }
+
+        return {
+          contributorId: contributor.contributorId,
+          contributorName: contributor.contributorName,
+          totalAmount: totalAmount,
+          expectedAmount: expectedAmount,
+          difference: difference,
+          status: status,
+          isOverpaid: isOverpaid,
+          isComplete: isComplete,
+          isPartial: isPartial,
+          paymentCount: contributor.contributions.length,
+          latestPaymentDate: contributor.latestPaymentDate,
+          contributions: contributor.contributions
+        };
+      });
 
       return statuses;
     } catch (error) {

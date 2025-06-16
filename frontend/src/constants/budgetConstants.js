@@ -118,19 +118,8 @@ export const BUDGET_COLORS = {
   OVERDUE: '#EF4444' // Red
 };
 
-// Currency formatting helper
-export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
-  }).format(amount || 0);
-};
-
-// Percentage formatting helper
-export const formatPercentage = (value) => {
-  return `${(value || 0).toFixed(1)}%`;
-};
+// Import shared formatters
+export { formatCurrency, formatPercentage } from '../utils/formatters';
 
 // Date range presets
 export const DATE_RANGE_PRESETS = [

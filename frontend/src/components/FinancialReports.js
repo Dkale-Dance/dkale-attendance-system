@@ -3,15 +3,7 @@ import { reportService } from '../services/ReportService';
 import { budgetService } from '../services/BudgetService';
 import ErrorMessage from './ErrorMessage';
 import styles from './Reports.module.css';
-
-// Format currency helper function
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
-  }).format(amount);
-};
+import { formatCurrency } from '../utils/formatters';
 
 const FinancialReports = ({ userRole }) => {
   // State for report data and UI controls

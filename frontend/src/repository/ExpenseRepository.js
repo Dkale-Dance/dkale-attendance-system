@@ -176,15 +176,21 @@ export class ExpenseRepository {
     try {
       const expenseRef = doc(this.db, this.collectionName, expenseId);
       
-      // Prepare update data with proper date conversion
+      // Prepare update data with proper date conversion and filter undefined fields
       const updatePayload = {
-        ...updateData,
         updatedAt: Timestamp.fromDate(new Date())
       };
       
+      // Only include defined fields from updateData
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] !== undefined) {
+          updatePayload[key] = updateData[key];
+        }
+      });
+      
       // Convert date if provided
-      if (updateData.date) {
-        updatePayload.date = DateConverterUtils.convertToTimestamp(updateData.date);
+      if (updatePayload.date) {
+        updatePayload.date = DateConverterUtils.convertToTimestamp(updatePayload.date);
       }
       
       await setDoc(expenseRef, updatePayload, { merge: true });

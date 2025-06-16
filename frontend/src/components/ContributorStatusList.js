@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { budgetService } from '../services/BudgetService';
 import ErrorMessage from './ErrorMessage';
-import styles from './StudentList.module.css';
+import styles from './ContributorStatusList.module.css';
 import { 
   BUDGET_LABELS, 
   DEFAULT_CONTRIBUTION_AMOUNT,

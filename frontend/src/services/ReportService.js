@@ -5,15 +5,7 @@ import { attendanceService } from "../services/AttendanceService";
 import { expenseService } from "../services/ExpenseService";
 import { sortByName } from "../utils/sorting";
 import { formatDateForDocId, parseDateString } from "../utils/DateUtils";
-
-// Utility function to format currency values
-export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
-  }).format(amount);
-};
+import { formatCurrency } from "../utils/formatters";
 
 export default class ReportService {
   constructor(reportRepository, studentRepository, attendanceRepository, attendanceService, expenseServiceInstance = expenseService) {

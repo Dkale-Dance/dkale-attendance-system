@@ -26,9 +26,46 @@ export class BudgetRepository {
       if (process.env.NODE_ENV !== 'test') {
         throw new Error(`Firestore initialization failed: ${error.message}`);
       }
-      this.db = {};
+      this.db = null; // Use null instead of empty object for test environment
     }
     this.collectionName = "budget_entries";
+  }
+
+  /**
+   * Retry utility for Firestore operations
+   * @param {Function} operation - The operation to retry
+   * @param {number} maxRetries - Maximum number of retries (default: 3)
+   * @param {number} delay - Delay between retries in ms (default: 1000)
+   * @returns {Promise} Operation result
+   */
+  async retryOperation(operation, maxRetries = 3, delay = 1000) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        
+        // Don't retry for certain error types
+        if (error.code === 'permission-denied' || 
+            error.code === 'invalid-argument' ||
+            error.code === 'not-found') {
+          throw error;
+        }
+        
+        if (attempt === maxRetries) {
+          console.error(`Operation failed after ${maxRetries} attempts:`, error);
+          throw new Error(`Operation failed after ${maxRetries} attempts: ${error.message}`);
+        }
+        
+        console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms:`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 1.5; // Exponential backoff
+      }
+    }
+    
+    throw lastError;
   }
 
   /**
@@ -70,7 +107,7 @@ export class BudgetRepository {
         updatedAt: DateConverterUtils.convertToTimestamp(new Date())
       };
       
-      await setDoc(entryRef, budgetEntry);
+      await this.retryOperation(() => setDoc(entryRef, budgetEntry));
       
       return {
         ...budgetEntry,

@@ -13,7 +13,7 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
     amount: '',
     date: new Date().toISOString().split('T')[0],
     notes: '',
-    budgetType: BUDGET_TYPES.FEE_REVENUE // Default to fee revenue
+    budgetType: BUDGET_TYPES.EXPENSE // Default to general expense
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,9 +37,15 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
     setError('');
 
     try {
+      const amount = parseFloat(formData.amount);
+      
+      if (amount <= 0) {
+        throw new Error('Amount must be greater than zero');
+      }
+      
       const expenseData = {
         ...formData,
-        amount: parseFloat(formData.amount),
+        amount: amount,
         date: new Date(formData.date),
         budgetType: formData.budgetType,
         adminId: currentUser?.uid || 'unknown-admin'
@@ -57,7 +63,7 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
         amount: '',
         date: new Date().toISOString().split('T')[0],
         notes: '',
-        budgetType: BUDGET_TYPES.FEE_REVENUE
+        budgetType: BUDGET_TYPES.EXPENSE
       });
     } catch (err) {
       setError(err.message);

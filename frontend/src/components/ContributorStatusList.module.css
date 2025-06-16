@@ -1,0 +1,178 @@
+.contributor-list {
+  max-width: 100%;
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.filter-controls {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.filter-controls label {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.filter-controls select,
+.filter-controls input {
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.status-summary {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #28a745;
+  margin-bottom: 20px;
+}
+
+.status-summary h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #28a745;
+}
+
+.status-summary p {
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+.contributor-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.contributor-list th, 
+.contributor-list td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.contributor-list th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.contributor-list tr:hover {
+  background-color: #f1f3f5;
+}
+
+.amount {
+  font-weight: bold;
+  text-align: right;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+}
+
+.status.complete {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status.partial {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status.overpaid {
+  background-color: #cce7ff;
+  color: #004085;
+}
+
+.status.none {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+  color: #6c757d;
+}
+
+.error {
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .contributor-list {
+    padding: 15px;
+  }
+  
+  .contributor-list th, 
+  .contributor-list td {
+    padding: 10px 8px;
+    font-size: 14px;
+  }
+  
+  .filter-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .filter-controls label {
+    margin-bottom: 5px;
+  }
+  
+  .filter-controls select,
+  .filter-controls input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .contributor-list {
+    padding: 10px;
+  }
+  
+  .contributor-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .contributor-list th, 
+  .contributor-list td {
+    padding: 8px 5px;
+    font-size: 12px;
+  }
+}
+
+/* Portrait mode for iPhones */
+@media (max-width: 400px) and (orientation: portrait) {
+  .contributor-list th:nth-child(4),
+  .contributor-list td:nth-child(4) {
+    display: none; /* Hide some columns on very small devices */
+  }
+  
+  .contributor-list th, 
+  .contributor-list td {
+    padding: 8px 5px;
+    font-size: 12px;
+  }
+}

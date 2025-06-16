@@ -77,11 +77,32 @@ const ContributionRevenueForm = ({ onEntryCreated, currentUser }) => {
         throw new Error('Please select a student as contributor');
       }
 
+      const amount = parseFloat(formData.amount);
+      const expectedAmount = parseFloat(formData.expectedAmount);
+      
+      if (amount <= 0) {
+        throw new Error('Amount must be greater than zero');
+      }
+      
+      if (expectedAmount <= 0) {
+        throw new Error('Expected amount must be greater than zero');
+      }
+      
+      // Warn about large overpayments (more than 50% over expected)
+      if (amount > expectedAmount * 1.5) {
+        const confirmed = window.confirm(
+          `Warning: The payment amount ($${amount.toFixed(2)}) is significantly higher than expected ($${expectedAmount.toFixed(2)}). This represents an overpayment of $${(amount - expectedAmount).toFixed(2)}. Do you want to continue?`
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+
       const contributionData = {
         contributorName: formData.contributorName,
         contributorId: formData.contributorId,
-        amount: parseFloat(formData.amount),
-        expectedAmount: parseFloat(formData.expectedAmount),
+        amount: amount,
+        expectedAmount: expectedAmount,
         date: new Date(formData.date),
         description: formData.description || `Contribution from ${formData.contributorName}`,
         adminId: currentUser?.uid || 'unknown-admin'

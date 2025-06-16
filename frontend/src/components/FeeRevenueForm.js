@@ -43,9 +43,15 @@ const FeeRevenueForm = ({ onEntryCreated, currentUser }) => {
     setError('');
 
     try {
+      const amount = parseFloat(formData.amount);
+      
+      if (amount <= 0) {
+        throw new Error('Amount must be greater than zero');
+      }
+      
       const feeData = {
         feeType: formData.feeType,
-        amount: parseFloat(formData.amount),
+        amount: amount,
         date: new Date(formData.date),
         description: formData.description || `${formData.feeType} fee for ${formData.studentName}`,
         adminId: currentUser?.uid || 'unknown-admin',
