@@ -60,7 +60,8 @@ export class BudgetRepository {
         }
         
         console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms:`, error.message);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        const currentDelay = delay;
+        await new Promise(resolve => setTimeout(resolve, currentDelay));
         delay *= 1.5; // Exponential backoff
       }
     }
