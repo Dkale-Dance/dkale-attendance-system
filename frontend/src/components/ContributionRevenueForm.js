@@ -80,12 +80,14 @@ const ContributionRevenueForm = ({ onEntryCreated, currentUser }) => {
       const amount = parseFloat(formData.amount);
       const expectedAmount = parseFloat(formData.expectedAmount);
       
-      if (amount <= 0) {
-        throw new Error('Amount must be greater than zero');
+      // Validate amount with explicit NaN and finite checks
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('Amount must be a valid positive number');
       }
       
-      if (expectedAmount <= 0) {
-        throw new Error('Expected amount must be greater than zero');
+      // Validate expected amount with explicit NaN and finite checks
+      if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+        throw new Error('Expected amount must be a valid positive number');
       }
       
       // Warn about large overpayments (more than 50% over expected)

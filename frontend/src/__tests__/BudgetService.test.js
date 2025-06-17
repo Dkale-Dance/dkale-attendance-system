@@ -104,7 +104,11 @@ describe('BudgetService', () => {
 
       const result = await budgetService.createContributionRevenue(contributionData);
 
-      expect(mockBudgetRepository.createContributionRevenue).toHaveBeenCalledWith(contributionData);
+      expect(mockBudgetRepository.createContributionRevenue).toHaveBeenCalledWith({
+        ...contributionData,
+        expectedAmount: 70,
+        status: BUDGET_STATUS.COMPLETED
+      });
       expect(result).toEqual(mockCreatedContribution);
     });
 

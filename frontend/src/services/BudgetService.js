@@ -51,6 +51,16 @@ export class BudgetService {
    */
   async createContributionRevenue(contributionData) {
     try {
+      // Explicit numeric validation
+      if (!Number.isFinite(contributionData.amount) || contributionData.amount <= 0) {
+        throw new Error("Amount must be a valid positive number");
+      }
+      
+      const expectedAmount = contributionData.expectedAmount || 70;
+      if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+        throw new Error("Expected amount must be a valid positive number");
+      }
+      
       // Validate the data using domain model
       const tempEntry = new ContributionRevenueEntry(
         'temp',
@@ -60,21 +70,24 @@ export class BudgetService {
         contributionData.adminId,
         contributionData.contributorId,
         contributionData.contributorName,
-        contributionData.expectedAmount || 70,
+        expectedAmount,
         contributionData.status
       );
       tempEntry.validate();
 
+      // Create a copy to avoid mutating the caller's object
+      const processedData = { ...contributionData, expectedAmount };
+      
       // Determine status based on payment completeness
-      if (!contributionData.status) {
-        if (contributionData.amount >= (contributionData.expectedAmount || 70)) {
-          contributionData.status = BUDGET_STATUS.COMPLETED;
+      if (!processedData.status) {
+        if (processedData.amount >= expectedAmount) {
+          processedData.status = BUDGET_STATUS.COMPLETED;
         } else {
-          contributionData.status = BUDGET_STATUS.PENDING;
+          processedData.status = BUDGET_STATUS.PENDING;
         }
       }
 
-      return await this.budgetRepository.createContributionRevenue(contributionData);
+      return await this.budgetRepository.createContributionRevenue(processedData);
     } catch (error) {
       console.error("Error creating contribution revenue:", error);
       throw error;
@@ -88,6 +101,11 @@ export class BudgetService {
    */
   async createExpense(expenseData) {
     try {
+      // Explicit numeric validation
+      if (!Number.isFinite(expenseData.amount) || expenseData.amount <= 0) {
+        throw new Error("Amount must be a valid positive number");
+      }
+      
       // Validate the data using domain model
       const tempEntry = new ExpenseEntry(
         'temp',

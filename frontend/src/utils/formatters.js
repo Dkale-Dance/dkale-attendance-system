@@ -8,11 +8,16 @@
  * @returns {string} Formatted currency string
  */
 export const formatCurrency = (amount) => {
+  // Handle invalid values
+  if (amount == null || Number.isNaN(amount) || !Number.isFinite(amount)) {
+    return '$0.00';
+  }
+  
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2
-  }).format(amount || 0);
+  }).format(amount);
 };
 
 /**
@@ -24,6 +29,12 @@ export const formatDate = (date) => {
   if (!date) return 'N/A';
   
   const dateObj = date instanceof Date ? date : new Date(date);
+  
+  // Check for invalid date
+  if (Number.isNaN(dateObj.getTime())) {
+    return 'Invalid Date';
+  }
+  
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
@@ -40,6 +51,12 @@ export const formatDateTime = (date) => {
   if (!date) return 'N/A';
   
   const dateObj = date instanceof Date ? date : new Date(date);
+  
+  // Check for invalid date
+  if (Number.isNaN(dateObj.getTime())) {
+    return 'Invalid Date';
+  }
+  
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
@@ -56,7 +73,10 @@ export const formatDateTime = (date) => {
  * @returns {string} Formatted percentage string
  */
 export const formatPercentage = (value, digits = 1) => {
-  if (typeof value !== 'number') return 'N/A';
+  // Handle invalid values
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+    return 'N/A';
+  }
   
   return new Intl.NumberFormat('en-US', {
     style: 'percent',
@@ -72,7 +92,10 @@ export const formatPercentage = (value, digits = 1) => {
  * @returns {string} Formatted number string
  */
 export const formatNumber = (value, digits = 0) => {
-  if (typeof value !== 'number') return 'N/A';
+  // Handle invalid values
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+    return 'N/A';
+  }
   
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: digits,

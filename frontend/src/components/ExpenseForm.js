@@ -39,8 +39,9 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
     try {
       const amount = parseFloat(formData.amount);
       
-      if (amount <= 0) {
-        throw new Error('Amount must be greater than zero');
+      // Validate amount with explicit NaN and finite checks
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('Amount must be a valid positive number');
       }
       
       const expenseData = {
