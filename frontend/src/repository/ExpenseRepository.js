@@ -166,6 +166,54 @@ export class ExpenseRepository {
   }
 
   /**
+   * Updates an existing expense record
+   * @param {string} expenseId - The expense ID to update
+   * @param {Object} updateData - Updated expense data
+   * @returns {Promise<Object>} Updated expense record
+   * @throws {Error} If update fails
+   */
+  async updateExpense(expenseId, updateData) {
+    try {
+      const expenseRef = doc(this.db, this.collectionName, expenseId);
+      
+      // Prepare update data with proper date conversion and filter undefined fields
+      const updatePayload = {
+        updatedAt: Timestamp.fromDate(new Date())
+      };
+      
+      // Only include defined fields from updateData
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] !== undefined) {
+          updatePayload[key] = updateData[key];
+        }
+      });
+      
+      // Convert date if provided
+      if (updatePayload.date) {
+        updatePayload.date = DateConverterUtils.convertToTimestamp(updatePayload.date);
+      }
+      
+      await setDoc(expenseRef, updatePayload, { merge: true });
+      
+      // Return the updated expense
+      const updatedDoc = await getDoc(expenseRef);
+      if (updatedDoc.exists()) {
+        const data = updatedDoc.data();
+        return {
+          ...data,
+          id: updatedDoc.id,
+          date: DateConverterUtils.convertToDate(data.date)
+        };
+      }
+      
+      throw new Error('Updated expense not found');
+    } catch (error) {
+      console.error("Error updating expense:", error);
+      throw new Error(`Failed to update expense: ${error.message}`);
+    }
+  }
+
+  /**
    * Deletes an expense record from the database
    * @param {string} expenseId - The expense ID to delete
    * @returns {Promise<void>}

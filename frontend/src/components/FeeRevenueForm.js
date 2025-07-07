@@ -1,27 +1,20 @@
 import React, { useState } from 'react';
-import { expenseService } from '../services/ExpenseService';
+import { budgetService } from '../services/BudgetService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentForm.module.css';
-import { EXPENSE_CATEGORIES, EXPENSE_LABELS } from '../constants/expenseConstants';
-import { BUDGET_TYPE_OPTIONS, BUDGET_LABELS } from '../constants/budgetConstants';
-import { BUDGET_TYPES } from '../models/BudgetModels';
+import { BUDGET_LABELS, FEE_TYPES } from '../constants/budgetConstants';
 
-const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
+const FeeRevenueForm = ({ onEntryCreated, currentUser }) => {
   const [formData, setFormData] = useState({
-    category: 'supplies',
-    description: '',
+    feeType: 'late',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    notes: '',
-    budgetType: BUDGET_TYPES.EXPENSE // Default to general expense
+    description: '',
+    studentId: '',
+    studentName: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const categories = EXPENSE_CATEGORIES.filter(cat => cat.value !== 'all');
-  const budgetTypeOptions = BUDGET_TYPE_OPTIONS.filter(option => 
-    option.value !== 'all' && option.value !== BUDGET_TYPES.CONTRIBUTION_REVENUE
-  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,6 +22,19 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
       ...prev,
       [name]: value
     }));
+
+    // Auto-generate description when fee type or student changes
+    if (name === 'feeType' || name === 'studentName') {
+      const updatedData = { ...formData, [name]: value };
+      if (updatedData.feeType && updatedData.studentName) {
+        const feeTypeLabel = FEE_TYPES.find(type => type.value === updatedData.feeType)?.label || updatedData.feeType;
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          description: `${feeTypeLabel} for ${updatedData.studentName}`
+        }));
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -44,27 +50,29 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
         throw new Error('Amount must be a valid positive number');
       }
       
-      const expenseData = {
-        ...formData,
+      const feeData = {
+        feeType: formData.feeType,
         amount: amount,
         date: new Date(formData.date),
-        budgetType: formData.budgetType,
-        adminId: currentUser?.uid || 'unknown-admin'
+        description: formData.description || `${formData.feeType} fee for ${formData.studentName}`,
+        adminId: currentUser?.uid || 'unknown-admin',
+        studentId: formData.studentId || formData.studentName, // Use studentId if available, otherwise use name
       };
 
-      const newExpense = await expenseService.createExpense(expenseData);
+      const newEntry = await budgetService.createFeeRevenue(feeData);
       
-      if (onExpenseCreated) {
-        onExpenseCreated(newExpense);
+      if (onEntryCreated) {
+        onEntryCreated(newEntry);
       }
 
+      // Reset form
       setFormData({
-        category: 'supplies',
-        description: '',
+        feeType: 'late',
         amount: '',
         date: new Date().toISOString().split('T')[0],
-        notes: '',
-        budgetType: BUDGET_TYPES.EXPENSE
+        description: '',
+        studentId: '',
+        studentName: ''
       });
     } catch (err) {
       setError(err.message);
@@ -75,45 +83,45 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
 
   return (
     <div className={styles.formContainer}>
-      <h3>{EXPENSE_LABELS.FORM_TITLE}</h3>
+      <h3>{BUDGET_LABELS.ADD_FEE_REVENUE}</h3>
       
       {error && <ErrorMessage message={error} />}
       
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGroup}>
-          <label htmlFor="category">Category:</label>
+          <label htmlFor="feeType">{BUDGET_LABELS.FEE_TYPE_LABEL}</label>
           <select
-            id="category"
-            name="category"
-            value={formData.category}
+            id="feeType"
+            name="feeType"
+            value={formData.feeType}
             onChange={handleInputChange}
             required
             className={styles.input}
           >
-            {categories.map(cat => (
-              <option key={cat.value} value={cat.value}>
-                {cat.label}
+            {FEE_TYPES.map(type => (
+              <option key={type.value} value={type.value}>
+                {type.label}
               </option>
             ))}
           </select>
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="description">Description:</label>
+          <label htmlFor="studentName">{BUDGET_LABELS.STUDENT_LABEL}</label>
           <input
             type="text"
-            id="description"
-            name="description"
-            value={formData.description}
+            id="studentName"
+            name="studentName"
+            value={formData.studentName}
             onChange={handleInputChange}
             required
             className={styles.input}
-            placeholder="Enter expense description"
+            placeholder="Enter student name"
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="amount">Amount:</label>
+          <label htmlFor="amount">{BUDGET_LABELS.AMOUNT_LABEL}</label>
           <input
             type="number"
             id="amount"
@@ -129,7 +137,7 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="date">Date:</label>
+          <label htmlFor="date">{BUDGET_LABELS.DATE_LABEL}</label>
           <input
             type="date"
             id="date"
@@ -142,38 +150,28 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="budgetType">Budget Source:</label>
-          <select
-            id="budgetType"
-            name="budgetType"
-            value={formData.budgetType}
-            onChange={handleInputChange}
-            required
-            className={styles.input}
-          >
-            {budgetTypeOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <small>
-            Select which budget this expense should be charged to:
-            <br />• <strong>Fee Revenue</strong>: Funded by late fees, absent fees, etc.
-            <br />• <strong>Expenses</strong>: General operational expenses
-          </small>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="notes">Notes (optional):</label>
+          <label htmlFor="description">{BUDGET_LABELS.DESCRIPTION_LABEL}</label>
           <textarea
-            id="notes"
-            name="notes"
-            value={formData.notes}
+            id="description"
+            name="description"
+            value={formData.description}
             onChange={handleInputChange}
             className={styles.input}
             rows="3"
-            placeholder="Additional notes about this expense"
+            placeholder="Description will be auto-generated or you can customize it"
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="studentId">Student ID (optional):</label>
+          <input
+            type="text"
+            id="studentId"
+            name="studentId"
+            value={formData.studentId}
+            onChange={handleInputChange}
+            className={styles.input}
+            placeholder="Student ID if available"
           />
         </div>
 
@@ -183,21 +181,12 @@ const ExpenseForm = ({ onExpenseCreated, onCancel, currentUser }) => {
             disabled={loading}
             className={styles.submitButton}
           >
-            {loading ? 'Adding...' : 'Add Expense'}
+            {loading ? 'Adding...' : BUDGET_LABELS.CREATE}
           </button>
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className={styles.cancelButton}
-            >
-              Cancel
-            </button>
-          )}
         </div>
       </form>
     </div>
   );
 };
 
-export default ExpenseForm;
+export default FeeRevenueForm;

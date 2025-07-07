@@ -3,16 +3,9 @@ import { expenseService } from '../services/ExpenseService';
 import ErrorMessage from './ErrorMessage';
 import styles from './StudentList.module.css';
 import { EXPENSE_CATEGORIES, EXPENSE_LABELS } from '../constants/expenseConstants';
+import { formatCurrency } from '../utils/formatters';
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
-  }).format(amount);
-};
-
-const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
+const ExpenseList = ({ refreshTrigger, onExpenseDeleted, onExpenseEdit }) => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -59,6 +52,12 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
     }
   };
 
+  const handleEditExpense = (expense) => {
+    if (onExpenseEdit) {
+      onExpenseEdit(expense);
+    }
+  };
+
 
   if (loading) {
     return <div className={styles.loading}>{EXPENSE_LABELS.LOADING}</div>;
@@ -100,6 +99,7 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
                 <th>Category</th>
                 <th>Description</th>
                 <th>Amount</th>
+                <th>Budget Source</th>
                 <th>Notes</th>
                 <th>Actions</th>
               </tr>
@@ -115,15 +115,32 @@ const ExpenseList = ({ refreshTrigger, onExpenseDeleted }) => {
                   </td>
                   <td>{expense?.description || '-'}</td>
                   <td className={styles.amount}>{formatCurrency(expense?.amount || 0)}</td>
+                  <td>
+                    <span className={`${styles.budgetType} ${styles[expense?.budgetType || 'fee-revenue']}`}>
+                      {expense?.budgetType === 'fee-revenue' ? 'Fee Revenue' : 
+                       expense?.budgetType === 'contribution-revenue' ? 'Contribution Revenue' :
+                       expense?.budgetType === 'expense' ? 'General Expense' :
+                       'Fee Revenue (default)'}
+                    </span>
+                  </td>
                   <td>{expense?.notes || '-'}</td>
                   <td>
-                    <button
-                      onClick={() => handleDeleteExpense(expense.id)}
-                      className={styles.deleteButton}
-                      title="Delete expense"
-                    >
-                      Delete
-                    </button>
+                    <div className={styles.actionButtons}>
+                      <button
+                        onClick={() => handleEditExpense(expense)}
+                        className={styles.editButton}
+                        title="Edit expense"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteExpense(expense.id)}
+                        className={styles.deleteButton}
+                        title="Delete expense"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -136,6 +136,31 @@ export default class ExpenseService {
   }
 
   /**
+   * Updates an existing expense record
+   * @param {string} expenseId - The expense ID to update
+   * @param {Object} updateData - Updated expense data
+   * @returns {Promise<Object>} Updated expense record
+   */
+  async updateExpense(expenseId, updateData) {
+    try {
+      // Check if expense exists
+      const existingExpense = await this.expenseRepository.getExpenseById(expenseId);
+      if (!existingExpense) {
+        throw new Error("Expense not found");
+      }
+
+      // Validate the update data (merge with existing data for validation)
+      const mergedData = { ...existingExpense, ...updateData };
+      this.validateExpense(mergedData);
+      
+      return await this.expenseRepository.updateExpense(expenseId, updateData);
+    } catch (error) {
+      console.error("Error updating expense:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Deletes an expense record
    * @param {string} expenseId - The expense ID to delete
    * @returns {Promise<Object>} Result containing success status and deleted expense

@@ -7,6 +7,7 @@ import StudentForm from "./components/StudentForm";
 import AttendanceDashboard from "./components/AttendanceDashboard";
 import PaymentDashboard from "./components/PaymentDashboard";
 import ExpenseManagement from "./components/ExpenseManagement";
+import BudgetManagement from "./components/BudgetManagement";
 import FinancialReports from "./components/FinancialReports";
 import AttendanceReports from "./components/AttendanceReports";
 import PublicDashboard from "./components/PublicDashboard";
@@ -237,6 +238,7 @@ function App() {
             <Route path="/attendance" element={<ProtectedRoute element={<AttendanceDashboard userRole={userRole} />} requiredRole="admin" />} />
             <Route path="/payments" element={<ProtectedRoute element={<PaymentDashboard userRole={userRole} />} requiredRole="admin" />} />
             <Route path="/expenses" element={<ProtectedRoute element={<ExpenseManagement userRole={userRole} currentUser={user} />} requiredRole="admin" />} />
+            <Route path="/budget-management" element={<ProtectedRoute element={<BudgetManagement userRole={userRole} currentUser={user} />} requiredRole="admin" />} />
             <Route path="/financial-reports" element={<ProtectedRoute element={<FinancialReports userRole={userRole} />} requiredRole="admin" />} />
             <Route path="/attendance-reports" element={<ProtectedRoute element={<AttendanceReports userRole={userRole} />} requiredRole="admin" />} />
             

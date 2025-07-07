@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import ExpenseForm from './ExpenseForm';
 import ExpenseList from './ExpenseList';
+import ExpenseEditForm from './ExpenseEditForm';
 import styles from './StudentManagement.module.css';
 
 const ExpenseManagement = ({ userRole, currentUser }) => {
   const [activeTab, setActiveTab] = useState('list');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingExpense, setEditingExpense] = useState(null);
 
   if (userRole !== 'admin') {
     return (
@@ -22,6 +24,22 @@ const ExpenseManagement = ({ userRole, currentUser }) => {
 
   const handleExpenseDeleted = () => {
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleExpenseEdit = (expense) => {
+    setEditingExpense(expense);
+    setActiveTab('edit');
+  };
+
+  const handleExpenseUpdated = () => {
+    setRefreshTrigger(prev => prev + 1);
+    setEditingExpense(null);
+    setActiveTab('list');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingExpense(null);
+    setActiveTab('list');
   };
 
   return (
@@ -41,6 +59,11 @@ const ExpenseManagement = ({ userRole, currentUser }) => {
         >
           Add Expense
         </button>
+        {activeTab === 'edit' && (
+          <button className={styles.activeTab}>
+            Edit Expense
+          </button>
+        )}
       </div>
 
       <div className={styles.content}>
@@ -48,12 +71,21 @@ const ExpenseManagement = ({ userRole, currentUser }) => {
           <ExpenseList
             refreshTrigger={refreshTrigger}
             onExpenseDeleted={handleExpenseDeleted}
+            onExpenseEdit={handleExpenseEdit}
           />
         )}
         {activeTab === 'add' && (
           <ExpenseForm
             onExpenseCreated={handleExpenseCreated}
             onCancel={() => setActiveTab('list')}
+            currentUser={currentUser}
+          />
+        )}
+        {activeTab === 'edit' && (
+          <ExpenseEditForm
+            expense={editingExpense}
+            onExpenseUpdated={handleExpenseUpdated}
+            onCancel={handleCancelEdit}
             currentUser={currentUser}
           />
         )}
