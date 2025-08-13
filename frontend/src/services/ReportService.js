@@ -3,17 +3,19 @@ import { studentRepository } from "../repository/StudentRepository";
 import { attendanceRepository } from "../repository/AttendanceRepository";
 import { attendanceService } from "../services/AttendanceService";
 import { expenseService } from "../services/ExpenseService";
+import { dateService } from "../services/DateService";
 import { sortByName } from "../utils/sorting";
 import { formatDateForDocId, parseDateString } from "../utils/DateUtils";
 import { formatCurrency } from "../utils/formatters";
 
 export default class ReportService {
-  constructor(reportRepository, studentRepository, attendanceRepository, attendanceService, expenseServiceInstance = expenseService) {
+  constructor(reportRepository, studentRepository, attendanceRepository, attendanceService, expenseServiceInstance = expenseService, dateServiceInstance = dateService) {
     this.reportRepository = reportRepository;
     this.studentRepository = studentRepository;
     this.attendanceRepository = attendanceRepository;
     this.attendanceService = attendanceService;
     this.expenseService = expenseServiceInstance;
+    this.dateService = dateServiceInstance;
   }
 
   /**
@@ -510,10 +512,20 @@ export default class ReportService {
    */
   async generateCumulativeFinancialReport(options = {}) {
     try {
-      // Set date range (default to current year if not provided)
+      // Set date range (fee year start date to current date for cumulative growth)
       const now = new Date();
-      const startDate = options.startDate || new Date(now.getFullYear(), 0, 1); // Jan 1 of current year
-      const endDate = options.endDate || new Date(now.getFullYear(), 11, 31); // Dec 31 of current year
+      const startDate = options.startDate || this.dateService.calculateFeeYearStartDate(now);
+      const endDate = options.endDate || now;
+      
+      // Validate date range
+      if (startDate >= endDate) {
+        throw new Error('Start date must be before end date');
+      }
+      
+      // Prevent future end dates
+      if (endDate > now) {
+        throw new Error('End date cannot be in the future');
+      }
       
       // Helper function to format month date - used in other methods
       // const getMonthDate = (year, month) => new Date(year, month, 15);
@@ -572,22 +584,9 @@ export default class ReportService {
           : 0
       };
       
-      // Create report title based on date range
-      let title;
-      if (months.length === 1) {
-        title = `Cumulative Financial Report: ${monthlyReports[0].period.displayName}`;
-      } else {
-        const startMonth = new Date(startDate).toLocaleString('default', { month: 'long' });
-        const endMonth = new Date(endDate).toLocaleString('default', { month: 'long' });
-        const startYear = startDate.getFullYear();
-        const endYear = endDate.getFullYear();
-        
-        if (startYear === endYear) {
-          title = `Cumulative Financial Report: ${startMonth} ${startYear} - ${endMonth} ${endYear}`;
-        } else {
-          title = `Cumulative Financial Report: ${startMonth} ${startYear} - ${endMonth} ${endYear}`;
-        }
-      }
+      // Create report title based on fee year period
+      const feeYearPeriod = this.dateService.getFeeYearPeriodString(now);
+      const title = `Cumulative Financial Report: ${feeYearPeriod}`;
       
       return {
         title,
@@ -1209,5 +1208,6 @@ export const reportService = new ReportService(
   studentRepository,
   attendanceRepository,
   attendanceService,
-  expenseService
+  expenseService,
+  dateService
 );

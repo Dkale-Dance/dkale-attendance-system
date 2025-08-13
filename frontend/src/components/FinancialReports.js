@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { reportService } from '../services/ReportService';
 import { budgetService } from '../services/BudgetService';
+import { dateService } from '../services/DateService';
 import ErrorMessage from './ErrorMessage';
 import styles from './Reports.module.css';
 import { formatCurrency } from '../utils/formatters';
@@ -15,10 +16,15 @@ const FinancialReports = ({ userRole }) => {
   const [budgetSummary, setBudgetSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(2024, 8, 1), // September 1st, 2024 (month is 0-indexed, so 8 = September)
-    endDate: new Date()
+  const [dateRange, setDateRange] = useState(() => {
+    // Initialize with fee year start date and current date as end date
+    const now = new Date();
+    return {
+      startDate: dateService.calculateFeeYearStartDate(now),
+      endDate: now
+    };
   });
+
 
   // Refs for chart rendering (would use actual chart library in production)
   const trendsChartRef = useRef(null);
@@ -90,11 +96,23 @@ const FinancialReports = ({ userRole }) => {
     setCurrentDate(newDate);
   };
 
+  // Helper function to format date as YYYY-MM-DD in local timezone
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Handle date range filter
   const handleDateRangeChange = (field, value) => {
+    // Parse date in local timezone to prevent timezone-related shifts
+    const [year, month, day] = value.split('-').map(num => parseInt(num, 10));
+    const localDate = new Date(year, month - 1, day); // month is 0-indexed
+    
     setDateRange(prev => ({
       ...prev,
-      [field]: new Date(value)
+      [field]: localDate
     }));
   };
 
@@ -377,6 +395,18 @@ const FinancialReports = ({ userRole }) => {
             <div className={styles.reportSection} data-testid="cumulative-report">
               <h2>{cumulativeReport.title}</h2>
               
+              {/* Fee Year Period Label */}
+              <div className={styles.reportInfo} data-testid="fee-year-period" style={{ 
+                marginBottom: '20px', 
+                padding: '12px 16px', 
+                backgroundColor: '#f8f9fa', 
+                border: '1px solid #e9ecef', 
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}>
+                <p style={{ margin: 0 }}><strong>Fee Year Period:</strong> {dateService.getFeeYearPeriodString()}</p>
+              </div>
+              
               {/* Date range filter */}
               <div className={styles.dateRangeFilter} data-testid="date-range-filter">
                 <div className={styles.filterInputs}>
@@ -385,7 +415,7 @@ const FinancialReports = ({ userRole }) => {
                     <input 
                       id="startDate"
                       type="date"
-                      value={dateRange.startDate.toISOString().substring(0, 10)}
+                      value={formatDateForInput(dateRange.startDate)}
                       onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
                       data-testid="start-date-input"
                     />
@@ -395,7 +425,7 @@ const FinancialReports = ({ userRole }) => {
                     <input 
                       id="endDate"
                       type="date" 
-                      value={dateRange.endDate.toISOString().substring(0, 10)}
+                      value={formatDateForInput(dateRange.endDate)}
                       onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
                       data-testid="end-date-input"
                     />
@@ -619,7 +649,7 @@ const FinancialReports = ({ userRole }) => {
                     <input 
                       id="vizStartDate"
                       type="date"
-                      value={dateRange.startDate.toISOString().substring(0, 10)}
+                      value={formatDateForInput(dateRange.startDate)}
                       onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
                     />
                   </div>
@@ -628,7 +658,7 @@ const FinancialReports = ({ userRole }) => {
                     <input 
                       id="vizEndDate"
                       type="date" 
-                      value={dateRange.endDate.toISOString().substring(0, 10)}
+                      value={formatDateForInput(dateRange.endDate)}
                       onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
                     />
                   </div>
