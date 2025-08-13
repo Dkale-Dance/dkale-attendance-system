@@ -139,28 +139,28 @@ describe('CumulativeReportIntegration', () => {
   });
 
   describe('DateService fee year calculations', () => {
-    it('should calculate current fee year correctly for date after August 14', () => {
+    it('should calculate current fee year correctly for date after August 13', () => {
       const testDate = new Date(2025, 9, 15); // October 15, 2025
       const range = dateService.getFeeYearDateRange(testDate);
 
-      expect(range.startDate).toEqual(new Date(2025, 7, 14)); // August 14, 2025
-      expect(range.endDate).toEqual(new Date(2026, 7, 13)); // August 13, 2026
+      expect(range.startDate).toEqual(new Date(2025, 7, 13)); // August 13, 2025
+      expect(range.endDate).toEqual(new Date(2026, 7, 12)); // August 12, 2026
     });
 
-    it('should calculate current fee year correctly for date before August 14', () => {
+    it('should calculate current fee year correctly for date before August 13', () => {
       const testDate = new Date(2025, 6, 10); // July 10, 2025
       const range = dateService.getFeeYearDateRange(testDate);
 
-      expect(range.startDate).toEqual(new Date(2025, 7, 14)); // August 14, 2025 (always current year)
-      expect(range.endDate).toEqual(new Date(2026, 7, 13)); // August 13, 2026
+      expect(range.startDate).toEqual(new Date(2024, 7, 13)); // August 13, 2024
+      expect(range.endDate).toEqual(new Date(2025, 7, 12)); // August 12, 2025
     });
 
-    it('should handle August 14 edge case correctly', () => {
-      const testDate = new Date(2025, 7, 14); // August 14, 2025
+    it('should handle August 13 edge case correctly', () => {
+      const testDate = new Date(2025, 7, 13); // August 13, 2025
       const range = dateService.getFeeYearDateRange(testDate);
 
-      expect(range.startDate).toEqual(new Date(2025, 7, 14)); // August 14, 2025
-      expect(range.endDate).toEqual(new Date(2026, 7, 13)); // August 13, 2026
+      expect(range.startDate).toEqual(new Date(2025, 7, 13)); // August 13, 2025
+      expect(range.endDate).toEqual(new Date(2026, 7, 12)); // August 12, 2026
     });
   });
 });

@@ -517,6 +517,16 @@ export default class ReportService {
       const startDate = options.startDate || this.dateService.calculateFeeYearStartDate(now);
       const endDate = options.endDate || now;
       
+      // Validate date range
+      if (startDate >= endDate) {
+        throw new Error('Start date must be before end date');
+      }
+      
+      // Prevent future end dates
+      if (endDate > now) {
+        throw new Error('End date cannot be in the future');
+      }
+      
       // Helper function to format month date - used in other methods
       // const getMonthDate = (year, month) => new Date(year, month, 15);
       

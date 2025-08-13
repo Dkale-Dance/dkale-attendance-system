@@ -1,6 +1,11 @@
 export class DateService {
   static FEE_YEAR_START_MONTH = 7; // August (0-indexed)
   static FEE_YEAR_START_DAY = 13;
+  
+  static MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   calculateFeeYearStartDate(currentDate = new Date()) {
     const currentYear = currentDate.getFullYear();
@@ -44,12 +49,7 @@ export class DateService {
     const startYear = startDate.getFullYear();
     
     // Format as "August 2024 - Current" or "August 2025 - Current" based on fee year
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    
-    const startMonth = months[DateService.FEE_YEAR_START_MONTH];
+    const startMonth = DateService.MONTHS[DateService.FEE_YEAR_START_MONTH];
     return `${startMonth} ${startYear} - Current`;
   }
 }
